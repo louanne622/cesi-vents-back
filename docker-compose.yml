@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/auth_db
+      - PORT=3001
+
+  club-service:
+    build: ./club-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/club_db
+      - PORT=3002
+
+  event-service:
+    build: ./event-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/event_db
+      - PORT=3003
+
+  ticket-service:
+    build: ./ticket-service
+    ports:
+      - "3004:3004"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/ticket_db
+      - PORT=3004
+
+  gamification-service:
+    build: ./gamification-service
+    ports:
+      - "3005:3005"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/gamification_db
+      - PORT=3005
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - club-service
+      - event-service
+      - ticket-service
+      - gamification-service
+
+volumes:
+  mongodb_data:
