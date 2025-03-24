@@ -1,0 +1,13 @@
+# Node
+node_modules/
+.env
+
+# Logs
+logs
+*.log
+
+# Mac
+.DS_Store
+
+# Docker
+*.local
