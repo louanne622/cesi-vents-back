@@ -1,20 +1,34 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function(req, res, next) {
-    // Récupérer le token du header
-    const token = req.header('x-auth-token');
-
-    // Vérifier si pas de token
-    if (!token) {
-        return res.status(401).json({ message: 'Pas de token, autorisation refusée' });
-    }
-
     try {
+        // Récupérer le token du header
+        const token = req.header('x-auth-token');
+        console.log("Token reçu:", token ? 'Présent' : 'Absent');
+
+        // Vérifier si pas de token
+        if (!token) {
+            console.log("Erreur: Pas de token dans les headers");
+            return res.status(401).json({ message: 'Pas de token, autorisation refusée' });
+        }
+
         // Vérifier le token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('Token vérifié avec succès');
+        
+        // Vérifier si l'utilisateur existe
+        if (!decoded.user || !decoded.user.id) {
+            console.log("Erreur: Données utilisateur manquantes dans le token");
+            return res.status(401).json({ message: 'Données utilisateur invalides' });
+        }
+
         req.user = decoded.user;
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Token non valide' });
+        console.error("Erreur d'authentification:", err.message);
+        res.status(401).json({ 
+            message: "Token non valide", 
+            error: err.message 
+        });
     }
 };
