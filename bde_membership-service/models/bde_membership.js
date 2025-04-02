@@ -19,7 +19,16 @@ const bdeMembershipSchema = new mongoose.Schema({
         required: true,
         min: 0,
         max: 100
-    }
+    },
+    promo_code: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    exclusive_events: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event'
+    }]
 }, {
     timestamps: true
 });
