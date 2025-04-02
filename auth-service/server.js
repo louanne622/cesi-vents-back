@@ -33,7 +33,7 @@ app.get('/api/test', auth, (req, res) => {
     res.json({ message: 'Route protégée accessible' });
 });
 
-const PORT = process.env.PORT_SERVICE_AUTH || 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Auth Service is running on port ${PORT}`);
 });
