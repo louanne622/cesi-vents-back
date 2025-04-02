@@ -15,8 +15,9 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/auth_db
+      - MONGODB_URI_AUTH=mongodb://mongodb:27017/auth_db
       - PORT=3001
+      - JWT_SECRET=cesi_vents_backend_2025
 
   club-service:
     build: ./club-service
@@ -25,8 +26,9 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/club_db
+      - MONGODB_URI_CLUB=mongodb://mongodb:27017/club_db
       - PORT=3002
+      - JWT_SECRET=cesi_vents_backend_2025
 
   event-service:
     build: ./event-service
@@ -35,8 +37,9 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/event_db
+      - MONGODB_URI_EVENT=mongodb://mongodb:27017/event_db
       - PORT=3003
+      - JWT_SECRET=cesi_vents_backend_2025
 
   ticket-service:
     build: ./ticket-service
@@ -45,8 +48,9 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/ticket_db
+      - MONGODB_URI_TICKET=mongodb://mongodb:27017/ticket_db
       - PORT=3004
+      - JWT_SECRET=cesi_vents_backend_2025
 
   gamification-service:
     build: ./gamification-service
@@ -55,8 +59,20 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/gamification_db
+      - MONGODB_URI_GAMIFICATION=mongodb://mongodb:27017/gamification_db
       - PORT=3005
+      - JWT_SECRET=cesi_vents_backend_2025
+
+  bde_membership-service:
+    build: ./bde_membership-service
+    ports:
+      - "3006:3006"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI_BDE_MEMBERSHIP=mongodb://mongodb:27017/bde_membership_db
+      - PORT=3006
+      - JWT_SECRET=cesi_vents_backend_2025
 
   gateway:
     build: ./gateway
@@ -68,6 +84,7 @@ services:
       - event-service
       - ticket-service
       - gamification-service
+      - bde_membership-service
 
 volumes:
   mongodb_data:
