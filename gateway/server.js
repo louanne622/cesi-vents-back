@@ -7,11 +7,12 @@ app.use(cors());
 app.use(express.json());
 
 const SERVICES = {
-    auth: "http://localhost:5000",
-    events: "http://localhost:5001",
-    tickets: "http://localhost:5002",
-    gamification: "http://localhost:5003",
-    clubs: "http://localhost:5004",
+    auth: "http://localhost:3001",
+    events: "http://localhost:3002",
+    tickets: "http://localhost:3003",
+    gamification: "http://localhost:3004",
+    clubs: "http://localhost:3005",
+    bde_membership: "http://localhost:3006"
 };
 
 app.use("api/:service", async (req, res) => {
@@ -38,7 +39,7 @@ app.use("api/:service", async (req, res) => {
     }
 });
 
-const PORT = 4000;
+const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Gateway is running on port ${PORT}`);
 });

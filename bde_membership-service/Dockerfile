@@ -1,5 +1,5 @@
 FROM node:18
-WORKDIR /club-service
+WORKDIR /bde_membership-service
 COPY package*.json ./
 RUN npm install
 COPY . .
