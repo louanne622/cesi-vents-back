@@ -1,5 +1,5 @@
 {
-  "name": "club-service",
+  "name": "bde_membership-service",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
