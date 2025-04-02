@@ -19,9 +19,9 @@ app.use((err, req, res, next) => {
 connectDB();
 
 // Routes publiques
-app.use("/api/club", require("./routes/clubRoutes"));
+app.use("/api/bde_membership", require("./routes/bde_membershipRoutes"));
 
-const PORT = process.env.PORT_SERVICE_CLUB || 3002;
+const PORT = process.env.PORT_SERVICE_BDE_MEMBERSHIP || 3006;
 app.listen(PORT, async () => {
-    console.log(`Club Service is running on port ${PORT}`);
+    console.log(`BDE Membership Service is running on port ${PORT}`);
 });
