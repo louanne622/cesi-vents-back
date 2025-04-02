@@ -10,9 +10,9 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
-app.use("api/tickets", require("./routes/ticketRoutes"));
+app.use("/api/tickets", require("./routes/ticketRoutes"));
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT_SERVICE_TICKET || 3003;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Ticket service is running on port ${PORT}`);
 });
