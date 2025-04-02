@@ -1,5 +1,4 @@
 const BdeMembership = require('../models/bde_membership');
-const User = require('../../auth-service/models/User');
 
 // Middleware to validate BDE membership data
 const validateBdeMembership = async (req, res, next) => {
@@ -45,15 +44,6 @@ const checkBdeMembership = async (req, res, next) => {
 
         if (currentMembership) {
             req.isBdeMember = true;
-            
-            // Récupérer les points de fidélité depuis la collection users
-            const user = await User.findById(user_id);
-            
-            req.bdeMemberInfo = {
-                discount: currentMembership.pourcentage_reduction,
-                promoCode: currentMembership.promo_code,
-                exclusiveEvents: currentMembership.exclusive_events,
-            };
         } else {
             req.isBdeMember = false;
         }
