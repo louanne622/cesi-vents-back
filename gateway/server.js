@@ -7,39 +7,72 @@ app.use(cors());
 app.use(express.json());
 
 const SERVICES = {
-    auth: "http://localhost:3001",
-    events: "http://localhost:3002",
-    tickets: "http://localhost:3003",
-    gamification: "http://localhost:3004",
-    clubs: "http://localhost:3005",
-    bde_membership: "http://localhost:3006"
+    auth: "http://auth-service:3001",
+    events: "http://event-service:3002",
+    tickets: "http://ticket-service:3003",
+    gamification: "http://gamification-service:3004",
+    clubs: "http://club-service:3005",
+    bde_membership: "http://bde_membership_service:3006"
 };
 
-app.use("api/:service", async (req, res) => {
+// Middleware pour logger les requêtes
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.originalUrl}`);
+    next();
+});
+
+// Route principale pour rediriger vers les services
+app.use('/api/:service/*', async (req, res) => {
     const { service } = req.params;
     const targetUrl = SERVICES[service];
+    
     if (!targetUrl) {
         return res.status(404).json({ error: "Service not found" });
     }
 
-    const endpoint = req.params[0];
-    const fullUrl = `${targetUrl}${endpoint}`;
+    // Récupérer le chemin après /api/service/
+    const path = req.originalUrl.replace(`/api/${service}`, '');
+    const fullUrl = `${targetUrl}${path}`;
 
     try {
-        const response = await fetch(url, {
+        // Copier les headers de la requête originale
+        const headers = {
+            ...req.headers,
+            'content-type': 'application/json',
+        };
+        
+        // Supprimer l'host header pour éviter les conflits
+        delete headers.host;
+
+        const response = await fetch(fullUrl, {
             method: req.method,
-            body: req.body,
-            headers: req.headers,
+            headers: headers,
+            body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
         });
 
-        const data = await response.json();
-        res.status(response.status).json(data);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return res.status(response.status).json(data);
+        } else {
+            const data = await response.text();
+            return res.status(response.status).send(data);
+        }
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        console.error(`Error forwarding request to ${service}:`, error);
+        res.status(500).json({ 
+            error: "Internal Server Error",
+            message: "Unable to process request"
+        });
     }
 });
 
-const PORT = 3000;
+// Route de santé
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Gateway is running on port ${PORT}`);
+    console.log(`Gateway running on port ${PORT}`);
 });

@@ -25,15 +25,15 @@ app.use((err, req, res, next) => {
 // Connexion à la base de données
 connectDB();
 
-// Routes publiques
-app.use("/api/auth", require("./routes/authRoutes"));
+// Routes publiques - Enlever le préfixe /api car il est géré par la gateway
+app.use("/", require("./routes/authRoutes"));
 
 // Test de la connexion
-app.get('/api/test', auth, (req, res) => {
-    res.json({ message: 'Route protégée accessible' });
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT_SERVICE_AUTH || 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Auth Service is running on port ${PORT}`);
+    console.log(`Auth service running on port ${PORT}`);
 });
