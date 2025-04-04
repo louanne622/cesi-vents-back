@@ -19,7 +19,7 @@ app.use((err, req, res, next) => {
 connectDB();
 
 // Routes publiques
-app.use("/api/club", require("./routes/clubRoutes"));
+app.use("/", require("./routes/clubRoutes"));
 
 const PORT = process.env.PORT_SERVICE_CLUB || 3002;
 app.listen(PORT, async () => {

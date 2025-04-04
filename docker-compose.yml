@@ -19,6 +19,8 @@ services:
       - gamification-service
       - club-service
       - bde_membership-service
+      - promotion-service
+      - transaction-service
     environment:
       - PORT=3000
 
@@ -72,10 +74,14 @@ services:
       - "3005:3005"
     depends_on:
       - mongodb
+      - auth-service
+      - bde_membership-service
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/clubs_db
       - PORT=3005
       - JWT_SECRET=cesi_vents_backend_2025
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - BDE_MEMBERSHIP_SERVICE_URL=http://bde_membership-service:3006
 
   bde_membership-service:
     build: ./bde_membership-service
@@ -87,6 +93,36 @@ services:
       - MONGODB_URI=mongodb://mongodb:27017/bde_membership_db
       - PORT=3006
       - JWT_SECRET=cesi_vents_backend_2025
+
+  promotion-service:
+    build: ./promotion-service
+    ports:
+      - "3007:3007"
+    depends_on:
+      - mongodb
+      - auth-service
+      - club-service
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/promotion_db
+      - PORT=3007
+      - JWT_SECRET=cesi_vents_backend_2025
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - CLUB_SERVICE_URL=http://club-service:3005
+
+  transaction-service:
+    build: ./transaction-service
+    ports:
+      - "3008:3008"
+    depends_on:
+      - mongodb
+      - auth-service
+      - event-service
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/transaction_db
+      - PORT=3008
+      - JWT_SECRET=cesi_vents_backend_2025
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - EVENT_SERVICE_URL=http://event-service:3002
 
 volumes:
   mongodb_data:
