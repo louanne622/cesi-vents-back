@@ -10,7 +10,12 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/tickets", require("./routes/ticketRoutes"));
+app.use("/", require("./routes/ticketRoutes"));
+
+// Route de test
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
 const PORT = process.env.PORT_SERVICE_TICKET || 3003;
 app.listen(PORT, () => {

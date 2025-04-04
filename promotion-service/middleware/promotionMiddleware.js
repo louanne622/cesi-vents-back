@@ -11,7 +11,7 @@ const validatePromotion = async (req, res, next) => {
         }
 
         if (max_use <= 0) {
-            return res.status(400).json({ message: 'Le nombre maximum d\'utilisations doit être supérieur à 0' });
+            return res.status(400).json({ message: "Le nombre maximum d'utilisations doit être supérieur à 0" });
         }
 
         // Vérifier si le code promotion existe déjà
@@ -22,7 +22,7 @@ const validatePromotion = async (req, res, next) => {
 
         // Vérifier si le club existe
         try {
-            await axios.get(`${process.env.CLUB_SERVICE_URL}/api/clubs/${id_club}`);
+            await axios.get(`${process.env.CLUB_SERVICE_URL}/${id_club}`);
         } catch (err) {
             return res.status(400).json({ message: 'Club non trouvé' });
         }
@@ -37,7 +37,7 @@ const validatePromotion = async (req, res, next) => {
 // Middleware pour vérifier si l'utilisateur est admin
 const isAdmin = async (req, res, next) => {
     try {
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
                 'x-auth-token': req.header('x-auth-token')
             }

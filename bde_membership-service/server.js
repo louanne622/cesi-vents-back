@@ -3,6 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
+// Vérifier que les variables d'environnement sont définies
+if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET is not defined');
+    process.exit(1);
+}
+
 const app = express();
 
 // Middleware
@@ -19,7 +25,12 @@ app.use((err, req, res, next) => {
 connectDB();
 
 // Routes publiques
-app.use("/api/bde_membership", require("./routes/bde_membershipRoutes"));
+app.use("/", require("./routes/bde_membershipRoutes"));
+
+// Route de test
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
 const PORT = process.env.PORT_SERVICE_BDE_MEMBERSHIP || 3006;
 app.listen(PORT, async () => {

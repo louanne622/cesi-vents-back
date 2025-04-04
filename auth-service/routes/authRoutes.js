@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 // Route d'inscription
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, first_name, last_name } = req.body;
+        const { email, password, first_name, last_name, role, bde_member} = req.body;
 
         // Vérifier si l'utilisateur existe déjà
         let user = await User.findOne({ email });
@@ -25,7 +25,9 @@ router.post('/register', async (req, res) => {
             email,
             password_hash: hashedPassword,
             first_name,
-            last_name
+            last_name,
+            role,
+            bde_member
         });
 
         await user.save();

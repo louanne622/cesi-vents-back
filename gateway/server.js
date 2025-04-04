@@ -12,7 +12,7 @@ const SERVICES = {
     tickets: "http://ticket-service:3003",
     gamification: "http://gamification-service:3004",
     clubs: "http://club-service:3005",
-    bde_membership: "http://bde_membership_service:3006",
+    bde_membership: "http://bde_membership-service:3006",
     promotion: "http://promotion-service:3007",
     transaction: "http://transaction-service:3008"
 };

@@ -3,8 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-ENV MONGODB_URI_CLUB=mongodb://mongodb:27017/club_db
-ENV PORT_SERVICE_CLUB=3002
+ENV MONGODB_URI_CLUB=mongodb://mongodb:27017/clubs_db
+ENV PORT=3005
 ENV JWT_SECRET=cesi_vents_backend_2025
-EXPOSE 3002
+EXPOSE 3005
 CMD ["node", "server.js"]

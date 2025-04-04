@@ -75,13 +75,11 @@ services:
     depends_on:
       - mongodb
       - auth-service
-      - bde_membership-service
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/clubs_db
       - PORT=3005
       - JWT_SECRET=cesi_vents_backend_2025
       - AUTH_SERVICE_URL=http://auth-service:3001
-      - BDE_MEMBERSHIP_SERVICE_URL=http://bde_membership-service:3006
 
   bde_membership-service:
     build: ./bde_membership-service

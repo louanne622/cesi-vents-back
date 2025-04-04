@@ -16,7 +16,7 @@ const validateTransaction = async (req, res, next) => {
 
         // Vérifier si l'événement existe et a des tickets disponibles
         try {
-            const eventResponse = await axios.get(`${process.env.EVENT_SERVICE_URL}/api/events/${event_id}`);
+            const eventResponse = await axios.get(`${process.env.EVENT_SERVICE_URL}/${event_id}`);
             const event = eventResponse.data;
 
             if (event.available_tickets <= 0) {
@@ -36,7 +36,7 @@ const validateTransaction = async (req, res, next) => {
 // Middleware pour vérifier si l'utilisateur est admin
 const isAdmin = async (req, res, next) => {
     try {
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
                 'x-auth-token': req.header('x-auth-token')
             }
@@ -76,7 +76,7 @@ const canAccessTransaction = async (req, res, next) => {
             return res.status(404).json({ message: 'Transaction non trouvée' });
         }
 
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
                 'x-auth-token': req.header('x-auth-token')
             }

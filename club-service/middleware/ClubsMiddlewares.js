@@ -36,13 +36,18 @@ const validateClub = async (req, res, next) => {
 // Middleware pour vérifier si l'utilisateur est admin
 const isAdmin = async (req, res, next) => {
     try {
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const token = req.header('x-auth-token');
+        if (!token) {
+            return res.status(401).json({ message: "Token manquant" });
+        }
+
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
-                'x-auth-token': req.header('x-auth-token')
+                'x-auth-token': token
             }
         });
         
-        if (response.data.role !== 'admin') {
+        if (!response.data || response.data.role !== 'admin') {
             return res.status(401).json({ message: "Vous n'avez pas accès à cette fonctionnalité" });
         }
         
@@ -76,7 +81,7 @@ const isMemberOfClub = async (req, res, next) => {
             return res.status(404).json({ message: 'Club non trouvé' });
         }
 
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
                 'x-auth-token': req.header('x-auth-token')
             }
@@ -110,7 +115,7 @@ const isClubAdmin = async (req, res, next) => {
             return res.status(404).json({ message: 'Club non trouvé' });
         }
 
-        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/api/auth/profil`, {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
             headers: {
                 'x-auth-token': req.header('x-auth-token')
             }

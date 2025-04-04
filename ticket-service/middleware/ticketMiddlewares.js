@@ -13,7 +13,7 @@ const validateEventAvailability = async (req, res, next) => {
 
         // Vérifier si l'événement existe et a des places disponibles
         try {
-            const eventResponse = await axios.get(`${process.env.EVENT_SERVICE_URL}/api/events/${event_id}`);
+            const eventResponse = await axios.get(`${process.env.EVENT_SERVICE_URL}/${event_id}`);
             const event = eventResponse.data;
 
             if (!event) {
