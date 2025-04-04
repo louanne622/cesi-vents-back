@@ -20,7 +20,8 @@ router.post('/new', async (req, res) => {
 
         // Update user points through auth service API
         try {
-            await axios.post(`${process.env.AUTH_SERVICE_URL}/api/users/${user_id}/points`, {
+            await axios.post(`${process.env.AUTH_SERVICE_URL}/${user_id}/addPoints`, {
+                userId: user_id,
                 points: 10
             });
         } catch (error) {

@@ -117,4 +117,21 @@ router.get('/profil', auth, async (req, res) => {
     }
 });
 
+//route pour ajouter des points à l'utilisateur
+router.post('/:id/addPoints', auth, async (req, res) => {
+    try {
+        const { points } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        user.points += points;
+        await user.save();
+        res.json({ message: 'Points ajoutés avec succès' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
 module.exports = router;
