@@ -13,7 +13,7 @@ app.use(express.json());
 connectDB();
 
 // Routes
-app.use('/api/events', eventRoutes);
+app.use("/", require("./routes/eventRoutes"));
 
 // Route de test
 app.get('/', (req, res) => {
@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
 });
 
 
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

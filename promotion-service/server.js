@@ -5,19 +5,22 @@ const connectDB = require('./config/db');
 
 const app = express();
 
-connectDB();
-
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-app.use("/", require("./routes/ticketRoutes"));
+// Connexion à la base de données
+connectDB();
 
-// Route de test
+// Routes
+app.use('/', require('./routes/promotionRoutes'));
+
+// Route de santé
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT_SERVICE_TICKET || 3003;
+const PORT = process.env.PORT || 3007;
 app.listen(PORT, () => {
-    console.log(`Ticket service is running on port ${PORT}`);
+    console.log(`Promotion service running on port ${PORT}`);
 });

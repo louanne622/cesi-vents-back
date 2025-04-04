@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 // Route d'inscription
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, first_name, last_name } = req.body;
+        const { email, password, first_name, last_name, role, bde_member} = req.body;
 
         // Vérifier si l'utilisateur existe déjà
         let user = await User.findOne({ email });
@@ -25,7 +25,9 @@ router.post('/register', async (req, res) => {
             email,
             password_hash: hashedPassword,
             first_name,
-            last_name
+            last_name,
+            role,
+            bde_member
         });
 
         await user.save();
@@ -112,6 +114,23 @@ router.get('/profil', auth, async (req, res) => {
             message: 'Erreur serveur', 
             error: err.message 
         });
+    }
+});
+
+//route pour ajouter des points à l'utilisateur
+router.post('/:id/addPoints', auth, async (req, res) => {
+    try {
+        const { points } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        user.points += points;
+        await user.save();
+        res.json({ message: 'Points ajoutés avec succès' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
     }
 });
 
