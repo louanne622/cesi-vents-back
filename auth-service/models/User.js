@@ -29,6 +29,15 @@ const userSchema = new mongoose.Schema({
     first_name: {
         type: String,
         required: true
+    },
+    phone: {
+        type: String,
+        required: false
+    },
+    campus: {
+        type: String,
+        required: false,
+        enum: ['Lille', 'Paris', 'Arras', 'Rouen']
     }
 }, {
     timestamps: true
