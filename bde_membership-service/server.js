@@ -36,3 +36,5 @@ const PORT = process.env.PORT_SERVICE_BDE_MEMBERSHIP || 3006;
 app.listen(PORT, async () => {
     console.log(`BDE Membership Service is running on port ${PORT}`);
 });
+
+module.exports = app;
