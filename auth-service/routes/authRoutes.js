@@ -136,7 +136,7 @@ router.post('/upload-profile-picture', auth, upload.single('image'), async (req,
     }
 
     // Mettre à jour l'URL de l'image dans la base de données avec un chemin absolu
-    const imageUrl = `${req.protocol}://${req.get('host')}/api/auth/uploads/profiles/${req.file.filename}`;
+    const imageUrl = `/api/auth/uploads/profiles/${req.file.filename}`;
     console.log('Nouvelle URL de l\'image:', imageUrl);
     user.logo = {
       url: imageUrl,
