@@ -1,21 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
-const auth = require('../../auth-service/middleware/auth');
 const { isAdmin, eventExists } = require('../middleware/EventMiddlewares');
 const { Parser } = require('json2csv');
 
-// Middleware pour vérifier si l'utilisateur est admin
-// const isAdmin = (req, res, next) => {
-//     if (req.user && req.user.role === 'admin') {
-//         next();
-//     } else {
-//         res.status(403).json({ message: 'Accès refusé. Rôle administrateur requis.' });
-//     }
-// };
-
 // Créer un nouvel événement (admin seulement)
-router.post('/create', auth, isAdmin, async (req, res) => {
+router.post('/create', isAdmin, async (req, res) => {
     try {
         const eventData = {
             ...req.body,
@@ -46,7 +36,7 @@ router.get('/:id', eventExists, async (req, res) => {
 });
 
 // Modifier un événement (admin seulement)
-router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
+router.put('/:id', isAdmin, eventExists, async (req, res) => {
     try {
         if (!req.event.canBeModified() && !req.body.forceUpdate) {
             return res.status(400).json({ 
@@ -72,7 +62,7 @@ router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
 });
 
 // Annuler un événement (admin seulement)
-router.delete('/:id', auth, isAdmin, eventExists, async (req, res) => {
+router.delete('/:id', isAdmin, eventExists, async (req, res) => {
     try {
         await req.event.cancel();
         res.json({ message: 'Événement annulé avec succès', event: req.event });
@@ -82,7 +72,7 @@ router.delete('/:id', auth, isAdmin, eventExists, async (req, res) => {
 });
 
 // Voir la liste des inscrits (admin seulement)
-router.get('/:id/participants', auth, isAdmin, eventExists, async (req, res) => {
+router.get('/:id/participants', isAdmin, eventExists, async (req, res) => {
     try {
         // Format de sortie (JSON par défaut ou CSV si spécifié)
         const format = req.query.format?.toLowerCase();

@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Transaction = require('../models/Transaction');
-const auth = require('../../auth-service/middleware/auth');
-const { isAdmin } = require('../middleware/TransactionMiddlewares');
+const { isAdmin, isAuth } = require('../middleware/transactionMiddleware');
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 
 // Obtenir le panier actif (transaction en mode draft)
-router.get('/cart', auth, async (req, res) => {
+router.get('/cart', isAuth, async (req, res) => {
     try {
         let transaction = await Transaction.findOne({ 
             userId: req.user.id,
@@ -28,7 +27,7 @@ router.get('/cart', auth, async (req, res) => {
 });
 
 // Ajouter un événement au panier
-router.post('/cart/add-item', auth, async (req, res) => {
+router.post('/cart/add-item', isAuth, async (req, res) => {
     try {
         const { eventId, quantity } = req.body;
 
@@ -86,7 +85,7 @@ router.post('/cart/add-item', auth, async (req, res) => {
 });
 
 // Mettre à jour la quantité d'un item
-router.put('/cart/update-quantity', auth, async (req, res) => {
+router.put('/cart/update-quantity', isAuth, async (req, res) => {
     try {
         const { eventId, quantity } = req.body;
         
@@ -123,7 +122,7 @@ router.put('/cart/update-quantity', auth, async (req, res) => {
 });
 
 // Supprimer un item du panier
-router.delete('/cart/remove-item/:eventId', auth, async (req, res) => {
+router.delete('/cart/remove-item/:eventId', isAuth, async (req, res) => {
     try {
         const transaction = await Transaction.findOne({ 
             userId: req.user.id,
@@ -145,7 +144,7 @@ router.delete('/cart/remove-item/:eventId', auth, async (req, res) => {
 });
 
 // Appliquer un code promo
-router.post('/cart/apply-promo', auth, async (req, res) => {
+router.post('/cart/apply-promo', isAuth, async (req, res) => {
     try {
         const { promotion_code } = req.body;
         
@@ -192,7 +191,7 @@ router.post('/cart/apply-promo', auth, async (req, res) => {
 });
 
 // Procéder au paiement
-router.post('/cart/checkout', auth, async (req, res) => {
+router.post('/cart/checkout', isAuth, async (req, res) => {
     try {
         const transaction = await Transaction.findOne({ 
             userId: req.user.id,
@@ -246,7 +245,7 @@ router.get('/admin/all', isAdmin, async (req, res) => {
 });
 
 // Obtenir les transactions d'un utilisateur
-router.get('/my-transactions', auth, async (req, res) => {
+router.get('/my-transactions', isAuth, async (req, res) => {
     try {
         const transactions = await Transaction.find({ 
             userId: req.user.id,
