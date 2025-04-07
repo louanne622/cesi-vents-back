@@ -8,10 +8,19 @@ const verifyToken = (token, secret) => {
     }
 };
 
+const generateAccessToken = (user) => {
+    return jwt.sign(
+        { user },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '15m' }
+    );
+};
+
 module.exports = function(req, res, next) {
     try {
         // Récupérer l'access token du header
         const accessToken = req.header('x-auth-token');
+        const refreshToken = req.header('x-refresh-token');
         
         if (!accessToken) {
             return res.status(401).json({ message: 'Access token manquant' });
@@ -22,24 +31,24 @@ module.exports = function(req, res, next) {
         
         if (!decoded) {
             // Si l'access token est invalide, vérifier le refresh token
-            const refreshToken = req.header('x-refresh-token');
-            
             if (!refreshToken) {
-                return res.status(401).json({ message: 'Tokens invalides' });
+                return res.status(401).json({ 
+                    message: 'Session expirée',
+                    code: 'TOKEN_EXPIRED'
+                });
             }
 
             const refreshDecoded = verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET);
             
             if (!refreshDecoded) {
-                return res.status(401).json({ message: 'Session expirée, veuillez vous reconnecter' });
+                return res.status(401).json({ 
+                    message: 'Session expirée, veuillez vous reconnecter',
+                    code: 'REFRESH_TOKEN_EXPIRED'
+                });
             }
 
             // Générer un nouvel access token
-            const newAccessToken = jwt.sign(
-                { user: refreshDecoded.user },
-                process.env.JWT_ACCESS_SECRET,
-                { expiresIn: '15m' }
-            );
+            const newAccessToken = generateAccessToken(refreshDecoded.user);
 
             // Envoyer le nouveau token dans le header
             res.setHeader('x-new-token', newAccessToken);
@@ -53,7 +62,9 @@ module.exports = function(req, res, next) {
         console.error("Erreur d'authentification:", err.message);
         res.status(401).json({ 
             message: "Erreur d'authentification", 
-            error: err.message 
+            error: err.message,
+            code: 'AUTH_ERROR'
         });
     }
 };
+

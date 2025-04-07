@@ -88,6 +88,23 @@ router.post('/login', async (req, res) => {
 
         const { accessToken, refreshToken } = generateTokens(user);
 
+        // Configurer les cookies avec le bon domaine
+        res.cookie('cesi_vents_access_token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
+        res.cookie('cesi_vents_refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
         res.json({
             accessToken,
             refreshToken,
@@ -245,6 +262,54 @@ router.post('/:id/addPoints', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
+// Route pour rafraîchir le token
+router.post('/refresh-token', async (req, res) => {
+    try {
+        const refreshToken = req.header('x-refresh-token');
+        
+        if (!refreshToken) {
+            return res.status(401).json({ 
+                message: 'Refresh token manquant',
+                code: 'REFRESH_TOKEN_MISSING'
+            });
+        }
+
+        // Vérifier le refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        
+        if (!decoded) {
+            return res.status(401).json({ 
+                message: 'Refresh token invalide',
+                code: 'REFRESH_TOKEN_INVALID'
+            });
+        }
+
+        // Générer un nouvel access token
+        const accessToken = jwt.sign(
+            { user: decoded.user },
+            process.env.JWT_ACCESS_SECRET,
+            { expiresIn: '15m' }
+        );
+
+        // Mettre à jour le cookie du token d'accès
+        res.cookie('cesi_vents_access_token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
+        res.json({ accessToken });
+    } catch (err) {
+        console.error('Erreur lors du rafraîchissement du token:', err.message);
+        res.status(401).json({ 
+            message: 'Session expirée, veuillez vous reconnecter',
+            code: 'REFRESH_TOKEN_ERROR'
+        });
     }
 });
 

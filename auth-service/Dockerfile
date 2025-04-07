@@ -10,6 +10,8 @@ RUN mkdir -p uploads/profiles && \
 
 ENV MONGODB_URI_AUTH=mongodb://mongodb:27017/auth_db
 ENV PORT_SERVICE_AUTH=3001
-ENV JWT_SECRET=cesi_vents_backend_2025
+ENV JWT_ACCESS_SECRET=cesi_vents_access_token
+ENV JWT_REFRESH_SECRET=cesi_vents_refresh_token
+ENV FRONTEND_URL=http://localhost:3002
 EXPOSE 3001
 CMD ["node", "server.js"]
