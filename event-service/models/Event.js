@@ -1,5 +1,32 @@
 const mongoose = require('mongoose');
 
+const participantSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
+    firstName: {
+        type: String,
+        required: true
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true
+    },
+    pricePaid: {
+        type: Number,
+        required: true
+    },
+    registrationDate: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const eventSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -46,52 +73,50 @@ const eventSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['draft', 'published', 'cancelled'],
-        default: 'draft'
+        default: 'published'
     },
-    participants: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        email: {
-            type: String,
-            required: true
-        },
-        name: {
-            type: String,
-            required: true
-        },
-        pricePaid: {
-            type: Number,
-            required: true
-        },
-        registrationDate: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-    currentCapacity: {
-        type: Number,
-        default: 0
-    }
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    },
+    participants: [participantSchema]
 }, {
     timestamps: true
 });
 
 // Méthode pour vérifier si l'événement peut être modifié
 eventSchema.methods.canBeModified = function() {
-    return this.participants.length === 0;
+    return this.participants.length === 0 || this.status === 'draft';
 };
 
 // Méthode pour vérifier si l'événement est complet
 eventSchema.methods.isFull = function() {
-    return this.currentCapacity >= this.maxCapacity;
+    return this.participants.length >= this.maxCapacity;
 };
 
 // Méthode pour vérifier si les inscriptions sont encore ouvertes
 eventSchema.methods.isRegistrationOpen = function() {
-    return new Date() <= this.registrationDeadline && this.status === 'published' && !this.isFull();
+    return (
+        this.status === 'published' &&
+        !this.isFull() &&
+        new Date() <= this.registrationDeadline
+    );
+};
+
+// Méthode pour annuler l'événement
+eventSchema.methods.cancel = async function() {
+    this.status = 'cancelled';
+    await this.save();
+};
+
+// Méthode pour obtenir la liste des participants
+eventSchema.methods.getParticipantsList = function() {
+    return this.participants.map(p => ({
+        name: `${p.firstName} ${p.lastName}`,
+        email: p.email,
+        pricePaid: p.pricePaid,
+        registrationDate: p.registrationDate
+    }));
 };
 
 module.exports = mongoose.model('Event', eventSchema);

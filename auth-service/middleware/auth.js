@@ -1,35 +1,58 @@
 const jwt = require('jsonwebtoken');
 
+const verifyToken = (token, secret) => {
+    try {
+        return jwt.verify(token, secret);
+    } catch (err) {
+        return null;
+    }
+};
+
 module.exports = function(req, res, next) {
     try {
-        console.log('Headers reçus dans auth middleware:', req.headers);
+        // Récupérer l'access token du header
+        const accessToken = req.header('x-auth-token');
         
-        // Récupérer le token du header
-        const token = req.header('x-auth-token');
-        console.log('Token reçu dans auth middleware:', token);
-
-        // Vérifier si pas de token
-        if (!token) {
-            console.log('Erreur: Pas de token dans les headers');
-            return res.status(401).json({ message: 'Pas de token, autorisation refusée' });
+        if (!accessToken) {
+            return res.status(401).json({ message: 'Access token manquant' });
         }
 
-        // Vérifier le token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('Token décodé:', decoded);
+        // Vérifier l'access token
+        const decoded = verifyToken(accessToken, process.env.JWT_ACCESS_SECRET);
         
-        // Vérifier si l'utilisateur existe
-        if (!decoded.user || !decoded.user.id) {
-            console.log('Erreur: Données utilisateur manquantes dans le token');
-            return res.status(401).json({ message: 'Données utilisateur invalides' });
+        if (!decoded) {
+            // Si l'access token est invalide, vérifier le refresh token
+            const refreshToken = req.header('x-refresh-token');
+            
+            if (!refreshToken) {
+                return res.status(401).json({ message: 'Tokens invalides' });
+            }
+
+            const refreshDecoded = verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET);
+            
+            if (!refreshDecoded) {
+                return res.status(401).json({ message: 'Session expirée, veuillez vous reconnecter' });
+            }
+
+            // Générer un nouvel access token
+            const newAccessToken = jwt.sign(
+                { user: refreshDecoded.user },
+                process.env.JWT_ACCESS_SECRET,
+                { expiresIn: '15m' }
+            );
+
+            // Envoyer le nouveau token dans le header
+            res.setHeader('x-new-token', newAccessToken);
+            req.user = refreshDecoded.user;
+        } else {
+            req.user = decoded.user;
         }
 
-        req.user = decoded.user;
         next();
     } catch (err) {
         console.error("Erreur d'authentification:", err.message);
         res.status(401).json({ 
-            message: "Token non valide", 
+            message: "Erreur d'authentification", 
             error: err.message 
         });
     }
