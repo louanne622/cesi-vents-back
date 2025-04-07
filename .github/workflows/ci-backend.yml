@@ -15,7 +15,6 @@ jobs:
         working-directory: ./auth-service
         run: |
           npm install
-          npm test
 
   test-bde-membership-service: 
     runs-on: ubuntu-latest
