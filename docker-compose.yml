@@ -35,7 +35,8 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/auth_db
       - PORT=3001
-      - JWT_SECRET=cesi_vents_backend_2025
+      - JWT_ACCESS_SECRET=cesi_vents_access_token
+      - JWT_REFRESH_SECRET=cesi_vents_refresh_token
 
   event-service:
     build: ./event-service
