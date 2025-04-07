@@ -38,6 +38,16 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         enum: ['Lille', 'Paris', 'Arras', 'Rouen']
+    },
+    logo: {
+        url: {
+            type: String,
+            required: false
+        },
+        alt: {
+            type: String,
+            required: false
+        }
     }
 }, {
     timestamps: true

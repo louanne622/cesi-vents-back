@@ -30,6 +30,8 @@ services:
       - "3001:3001"
     depends_on:
       - mongodb
+    volumes:
+      - profile_uploads:/auth-service/uploads
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/auth_db
       - PORT=3001
@@ -124,3 +126,4 @@ services:
 
 volumes:
   mongodb_data:
+  profile_uploads:
