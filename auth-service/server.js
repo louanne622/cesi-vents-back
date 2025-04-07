@@ -24,7 +24,7 @@ connectDB();
 app.use("/", require("./routes/authRoutes"));
 
 // Servir les fichiers statiques après les routes
-app.use('/api/auth/uploads', express.static(path.join(__dirname, 'uploads'), {
+app.use('/api/auth/uploads', express.static('/auth-service/uploads', {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
             res.set('Content-Type', 'image/jpeg');

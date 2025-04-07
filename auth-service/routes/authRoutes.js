@@ -106,6 +106,62 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Route pour uploader une photo de profil
+router.post('/upload-profile-picture', auth, upload.single('image'), async (req, res) => {
+  try {         
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files);
+    console.log('Request file:', req.file);
+    
+    if (!req.file) {
+      console.log('Aucun fichier n\'a été reçu');
+      return res.status(400).json({ message: 'Aucune image n\'a été uploadée' });
+    }
+
+    const user = await User.findById(req.user.id).select('-password_hash');
+    console.log('Utilisateur trouvé:', user);
+
+    if (!user) {
+      console.error('Utilisateur non trouvé dans la base de données');
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Supprimer l'ancienne image si elle existe
+    if (user.logo && user.logo.url) {
+      const oldPath = path.join('/auth-service/uploads/profiles', path.basename(user.logo.url));
+      console.log('Tentative de suppression de l\'ancienne image:', oldPath);
+      try {
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+          console.log('Ancienne image supprimée avec succès');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression de l\'ancienne image:', error);
+        // Continue with the upload even if old file deletion fails
+      }
+    }
+
+    // Mettre à jour l'URL de l'image dans la base de données avec un chemin absolu
+    const imageUrl = `/api/auth/uploads/profiles/${req.file.filename}`;
+    console.log('Nouvelle URL de l\'image:', imageUrl);
+    user.logo = {
+      url: imageUrl,
+      alt: `Photo de profil de ${user.first_name}`
+    };
+    
+    await user.save();
+    console.log('Profil utilisateur mis à jour avec succès');
+
+    res.json({
+      message: 'Photo de profil mise à jour avec succès',
+      logo: user.logo
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'upload de la photo de profil:", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour de la photo de profil" });
+  }
+});
+
 // Route pour obtenir le profil de l'utilisateur connecté
 router.get('/profil', auth, async (req, res) => {
     try {

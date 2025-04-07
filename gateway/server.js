@@ -150,16 +150,18 @@ app.use('/api/:service/*', async (req, res) => {
 
 // Route pour servir les fichiers statiques
 app.use('/api/auth/uploads', async (req, res) => {
-    const targetUrl = SERVICES.auth + '/uploads' + req.path;
+    const targetUrl = SERVICES.auth + '/api/auth/uploads' + req.path;
     console.log('Forwarding static file request to:', targetUrl);
     
     try {
         const response = await fetch(targetUrl);
         if (!response.ok) {
+            console.error('File not found:', response.status, response.statusText);
             return res.status(response.status).send('File not found');
         }
         
         const contentType = response.headers.get('content-type');
+        console.log('Content-Type reçu:', contentType);
         res.set('Content-Type', contentType);
         response.body.pipe(res);
     } catch (error) {
