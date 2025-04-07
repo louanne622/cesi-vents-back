@@ -14,7 +14,7 @@ jobs:
       - name: Install and test
         working-directory: ./auth-service
         run: |
-          npm install
+          npm ci
           npm test
 
   test-bde-membership-service: 
