@@ -1,11 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
+const auth = require('../../auth-service/middleware/auth');
+const { isAdmin, eventExists } = require('../middleware/EventMiddlewares');
+const { Parser } = require('json2csv');
 
-// Créer un nouvel événement
-router.post('/create', async (req, res) => {
+// Middleware pour vérifier si l'utilisateur est admin
+// const isAdmin = (req, res, next) => {
+//     if (req.user && req.user.role === 'admin') {
+//         next();
+//     } else {
+//         res.status(403).json({ message: 'Accès refusé. Rôle administrateur requis.' });
+//     }
+// };
+
+// Créer un nouvel événement (admin seulement)
+router.post('/create', auth, isAdmin, async (req, res) => {
     try {
-        const event = new Event(req.body);
+        const eventData = {
+            ...req.body,
+            createdBy: req.user.id
+        };
+        
+        const event = new Event(eventData);
         const savedEvent = await event.save();
         res.status(201).json(savedEvent);
     } catch (error) {
@@ -24,48 +41,110 @@ router.get('/', async (req, res) => {
 });
 
 // Récupérer un événement par son ID
-router.get('/:id', async (req, res) => {
-    try {
-        const event = await Event.findById(req.params.id);
-        if (event) {
-            res.json(event);
-        } else {
-            res.status(404).json({ message: 'Événement non trouvé' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+router.get('/:id', eventExists, async (req, res) => {
+    res.json(req.event);
 });
 
-// Modifier un événement
-router.put('/:id', async (req, res) => {
+// Modifier un événement (admin seulement)
+router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
     try {
-        const event = await Event.findById(req.params.id);
-        if (!event) {
-            return res.status(404).json({ message: 'Événement non trouvé' });
+        if (!req.event.canBeModified() && !req.body.forceUpdate) {
+            return res.status(400).json({ 
+                message: 'L\'événement ne peut pas être modifié car il a déjà des participants. Utilisez forceUpdate pour forcer la modification.'
+            });
         }
 
-        const updatedEvent = await Event.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
+        // Si forceUpdate est true et qu'il y a des participants, annuler l'événement
+        if (req.body.forceUpdate && req.event.participants.length > 0) {
+            await req.event.cancel();
+            return res.status(200).json({
+                message: 'L\'événement a été annulé car il y avait des participants.',
+                event: req.event
+            });
+        }
+
+        Object.assign(req.event, req.body);
+        const updatedEvent = await req.event.save();
         res.json(updatedEvent);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
 
-// Supprimer un événement
-router.delete('/:id', async (req, res) => {
+// Annuler un événement (admin seulement)
+router.delete('/:id', auth, isAdmin, eventExists, async (req, res) => {
+    try {
+        await req.event.cancel();
+        res.json({ message: 'Événement annulé avec succès', event: req.event });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Voir la liste des inscrits (admin seulement)
+router.get('/:id/participants', auth, isAdmin, eventExists, async (req, res) => {
+    try {
+        // Format de sortie (JSON par défaut ou CSV si spécifié)
+        const format = req.query.format?.toLowerCase();
+        const participants = req.event.getParticipantsList();
+
+        if (format === 'csv') {
+            const parser = new Parser({
+                fields: ['name', 'email', 'pricePaid', 'registrationDate']
+            });
+            const csv = parser.parse(participants);
+            res.header('Content-Type', 'text/csv');
+            res.attachment(`participants-event-${req.event.title}.csv`);
+            return res.send(csv);
+        }
+
+        res.json(participants);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Obtenir la liste des participants
+router.get('/:id/participants/export', async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
         if (!event) {
             return res.status(404).json({ message: 'Événement non trouvé' });
         }
 
-        await Event.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Événement supprimé avec succès' });
+        const fields = ['name', 'email', 'pricePaid', 'registrationDate'];
+        const opts = { fields };
+        const parser = new Parser(opts);
+        const csv = parser.parse(event.participants);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`participants-${event.title}-${Date.now()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Envoyer un message groupé aux participants
+router.post('/:id/send-message', async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ message: 'Événement non trouvé' });
+        }
+
+        if (!req.body.message) {
+            return res.status(400).json({ message: 'Le message est requis' });
+        }
+
+        // Note: Cette partie nécessiterait un service d'envoi d'emails
+        // Pour l'instant, on simule l'envoi
+        const recipients = event.participants.map(p => p.email);
+        
+        res.json({ 
+            message: 'Message envoyé avec succès',
+            recipients: recipients
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

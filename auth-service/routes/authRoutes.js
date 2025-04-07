@@ -8,22 +8,36 @@ const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
 
+// Générer les tokens
+const generateTokens = (user) => {
+    const accessToken = jwt.sign(
+        { user: { id: user.id, role: user.role } },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '6h' }  
+    );
+
+    const refreshToken = jwt.sign(
+        { user: { id: user.id, role: user.role } },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: '7d' }
+    );
+
+    return { accessToken, refreshToken };
+};
+
 // Route d'inscription
 router.post('/register', async (req, res) => {
     try {
         const { email, password, first_name, last_name, role, bde_member, phone, campus } = req.body;
 
-        // Vérifier si l'utilisateur existe déjà
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ message: 'Cet utilisateur existe déjà' });
         }
 
-        // Hasher le mot de passe
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Créer le nouvel utilisateur
         user = new User({
             email,
             password_hash: hashedPassword,
@@ -37,26 +51,23 @@ router.post('/register', async (req, res) => {
 
         await user.save();
 
-        // Créer et retourner le token JWT
-        const payload = {
+        const { accessToken, refreshToken } = generateTokens(user);
+
+        res.json({
+            accessToken,
+            refreshToken,
             user: {
                 id: user.id,
-                role: user.role
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role,
+                bde_member: user.bde_member
             }
-        };
-
-        jwt.sign(
-            payload,
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ token });
-            }
-        );
+        });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Erreur serveur');
+        res.status(500).json({ message: 'Erreur serveur' });
     }
 });
 
@@ -65,95 +76,34 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Vérifier si l'utilisateur existe
-        const user = await User.findOne({ email });
+        let user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: 'Identifiants invalides' });
         }
 
-        // Vérifier le mot de passe
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(400).json({ message: 'Identifiants invalides' });
         }
 
-        // Créer et retourner le token JWT
-        const payload = {
+        const { accessToken, refreshToken } = generateTokens(user);
+
+        res.json({
+            accessToken,
+            refreshToken,
             user: {
                 id: user.id,
-                role: user.role
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role,
+                bde_member: user.bde_member
             }
-        };
-
-        jwt.sign(
-            payload,
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ token });
-            }
-        );
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erreur serveur');
     }
-});
-
-// Route pour uploader une photo de profil
-router.post('/upload-profile-picture', auth, upload.single('image'), async (req, res) => {
-  try {         
-    console.log('Request body:', req.body);
-    console.log('Request files:', req.files);
-    console.log('Request file:', req.file);
-    
-    if (!req.file) {
-      console.log('Aucun fichier n\'a été reçu');
-      return res.status(400).json({ message: 'Aucune image n\'a été uploadée' });
-    }
-
-    const user = await User.findById(req.user.id).select('-password_hash');
-    console.log('Utilisateur trouvé:', user);
-
-    if (!user) {
-      console.error('Utilisateur non trouvé dans la base de données');
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-    
-    // Supprimer l'ancienne image si elle existe
-    if (user.logo && user.logo.url) {
-      const oldPath = path.join('/auth-service/uploads/profiles', path.basename(user.logo.url));
-      console.log('Tentative de suppression de l\'ancienne image:', oldPath);
-      try {
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-          console.log('Ancienne image supprimée avec succès');
-        }
-      } catch (error) {
-        console.error('Erreur lors de la suppression de l\'ancienne image:', error);
-        // Continue with the upload even if old file deletion fails
-      }
-    }
-
-    // Mettre à jour l'URL de l'image dans la base de données avec un chemin absolu
-    const imageUrl = `${req.protocol}://${req.get('host')}/api/auth/uploads/profiles/${req.file.filename}`;
-    console.log('Nouvelle URL de l\'image:', imageUrl);
-    user.logo = {
-      url: imageUrl,
-      alt: `Photo de profil de ${user.first_name}`
-    };
-    
-    await user.save();
-    console.log('Profil utilisateur mis à jour avec succès');
-
-    res.json({
-      message: 'Photo de profil mise à jour avec succès',
-      logo: user.logo
-    });
-  } catch (error) {
-    console.error("Erreur lors de l'upload de la photo de profil:", error);
-    res.status(500).json({ message: "Erreur lors de la mise à jour de la photo de profil" });
-  }
 });
 
 // Route pour obtenir le profil de l'utilisateur connecté

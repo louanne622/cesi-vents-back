@@ -1,35 +1,74 @@
 const mongoose = require('mongoose');
 
-const transactionSchema = new mongoose.Schema({
-    user_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    event_id: {
+const transactionItemSchema = new mongoose.Schema({
+    eventId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event',
         required: true
     },
-    amount: {
+    quantity: {
+        type: Number,
+        required: true,
+        min: [1, 'La quantité doit être au moins de 1']
+    },
+    price: {
+        type: Number,
+        required: true
+    },
+    eventDetails: {
+        title: String,
+        date: Date,
+        time: String,
+        location: String
+    }
+});
+
+const transactionSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    items: [transactionItemSchema],
+    totalAmount: {
         type: Number,
         required: true
     },
     status: {
         type: String,
-        enum: ['pending', 'completed', 'failed', 'refunded'],
-        default: 'pending'
+        enum: ['draft', 'pending', 'completed', 'failed', 'refunded'],
+        default: 'draft'
     },
-    payment_method: {
+    promoCode: {
+        code: String,
+        discount: Number
+    },
+    paymentMethod: {
         type: String,
-        required: true
-    },
-    date_transactions: {
-        type: Date,
-        default: Date.now
+        enum: ['card', 'transfer'],
+        required: function() {
+            return this.status !== 'draft';
+        }
     }
 }, {
     timestamps: true
 });
+
+// Méthode pour calculer le total
+transactionSchema.methods.calculateTotal = function() {
+    let total = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    if (this.promoCode && this.promoCode.discount) {
+        total = total * (1 - this.promoCode.discount);
+    }
+    
+    this.totalAmount = total;
+    return total;
+};
+
+// Méthode pour vérifier si la transaction peut être modifiée
+transactionSchema.methods.canBeModified = function() {
+    return this.status === 'draft';
+};
 
 module.exports = mongoose.model('Transaction', transactionSchema);
