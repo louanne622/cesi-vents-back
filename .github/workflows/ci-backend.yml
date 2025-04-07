@@ -1,0 +1,98 @@
+name: CI Backend
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  test-auth-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./auth-service
+        run: |
+          npm ci
+          npm test
+
+  test-bde-membership-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./bde_membership-service
+        run: |
+          npm ci
+          npm test    
+
+  test-club-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test club service
+        working-directory: ./club-service
+        run: |
+          npm ci
+          npm test
+                    
+  test-ticket-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./ticket-service
+        run: |
+          npm ci
+          npm test
+
+  test-gamification-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./gamification-service
+        run: |
+          npm ci
+          npm test
+
+  test-gateway-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./gateway-service
+        run: |
+          npm ci
+          npm test
+
+  test-event-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./event-service
+        run: |
+          npm ci
+          npm test
+
+  test-transaction-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./transaction-service
+        run: |
+          npm ci
+          npm test
+
+  test-promotion-service: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and test
+        working-directory: ./promotion-service
+        run: |
+          npm ci
+          npm test
