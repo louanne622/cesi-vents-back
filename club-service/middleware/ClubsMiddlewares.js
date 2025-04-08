@@ -4,9 +4,9 @@ const axios = require('axios');
 // Middleware pour valider les données du club
 const validateClub = async (req, res, next) => {
     try {
-        const { name, description, logo, email } = req.body;
+        const { name, description, logo, email, category, campus } = req.body;
 
-        if (!name || !description || !logo || !email) {
+        if (!name || !description || !logo || !email || !campus || !category) {
             return res.status(400).json({ message: 'Tous les champs sont requis' });
         }
 

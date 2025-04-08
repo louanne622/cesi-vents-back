@@ -6,7 +6,7 @@ const { validateClub, isAdmin, clubExists, isClubAdmin } = require('../middlewar
 // Créer un club (admin seulement)
 router.post('/create', isAdmin, validateClub, async (req, res) => {
     try {
-        const { name, description, logo, email } = req.body;
+        const { name, description, logo, email, category, campus } = req.body;
         const club = new Club({
             name,
             description,
@@ -14,7 +14,9 @@ router.post('/create', isAdmin, validateClub, async (req, res) => {
                 url: logo.url,
                 alt: logo.alt
             },
-            email
+            email,
+            category,
+            campus
         });
 
         await club.save();
@@ -44,13 +46,14 @@ router.get('/:id', clubExists, async (req, res) => {
 // Mettre à jour un club (admin du club seulement)
 router.put('/:id', isClubAdmin, validateClub, async (req, res) => {
     try {
-        const { name, description, logo, email } = req.body;
+        const { name, description, logo, email, category, campus } = req.body;
         
         req.club.name = name;
         req.club.description = description;
         req.club.logo = logo;
         req.club.email = email;
-
+        req.club.category = category;
+        req.club.campus = campus;   
         await req.club.save();
         res.json(req.club);
     } catch (err) {
