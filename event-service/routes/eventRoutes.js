@@ -6,12 +6,15 @@ const { Parser } = require('json2csv');
 
 // Créer un nouvel événement (admin seulement)
 router.post('/create', isAdmin, async (req, res) => {
-    try {
+    try {       
+        if (!req.user || !req.user._id) {
+            console.error('Données utilisateur manquantes ou invalides');
+            return res.status(500).json({ message: "Erreur d'authentification - données utilisateur invalides" });
+        }
         const eventData = {
             ...req.body,
-            createdBy: req.user.id
-        };
-        
+            createdBy: req.user._id.toString() // Conversion explicite en string si c'est un ObjectId
+        };        
         const event = new Event(eventData);
         const savedEvent = await event.save();
         res.status(201).json(savedEvent);
@@ -30,9 +33,19 @@ router.get('/', async (req, res) => {
     }
 });
 
+
 // Récupérer un événement par son ID
-router.get('/:id', eventExists, async (req, res) => {
-    res.json(req.event);
+router.get('/:id', async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (event) {
+            res.json(event);
+        } else {
+            res.status(404).json({ message: 'Événement non trouvé' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // Modifier un événement (admin seulement)
