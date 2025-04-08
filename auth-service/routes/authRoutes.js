@@ -329,4 +329,68 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Déconnexion réussie' });
 });
 
+router.get('/getAllUsers',  async (req, res) => {
+    try {
+        const users = await User.find().select('-password_hash');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+router.get('/getUserById/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password_hash');
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Mettre à jour un utilisateur
+router.put('/updateUser/:id', async (req, res) => {
+    try {
+        const { first_name, last_name, phone, campus } = req.body;
+        const user = req.user;
+
+        // Mise à jour des champs autorisés
+        if (first_name) user.first_name = first_name;
+        if (last_name) user.last_name = last_name;
+        if (phone) user.phone = phone;
+        if (campus) user.campus = campus;
+
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Supprimer un utilisateur (admin seulement)
+router.delete('/deleteUser/:id', async (req, res) => {
+    try {
+        await req.user.remove();
+        res.json({ message: 'Utilisateur supprimé avec succès' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+//route pour ajouter un utilisateur
+router.post('/addUser', async (req, res) => {
+    try {
+        const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
+        const user = new User({ first_name, last_name, email, password, phone, campus, role, bde_member });
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+}); 
+
 module.exports = router;
