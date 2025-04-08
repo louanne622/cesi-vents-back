@@ -5,8 +5,8 @@ const fs = require('fs');
 // Configuration du stockage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Use absolute path for Docker container
-    const uploadDir = '/auth-service/uploads/profiles';
+    // Utiliser le chemin correspondant au volume monté dans docker-compose.yml
+    const uploadDir = path.join('/auth-service/uploads/profiles');
     console.log('Upload directory:', uploadDir);
     
     // Créer le dossier s'il n'existe pas

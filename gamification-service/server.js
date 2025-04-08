@@ -12,7 +12,7 @@ app.use(express.json());
 
 app.use("api/gamification", require("./routes/gamificationRoutes"));
 
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT || 5004;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

@@ -145,7 +145,7 @@ router.post('/upload-profile-picture', auth, upload.single('image'), async (req,
     
     // Supprimer l'ancienne image si elle existe
     if (user.logo && user.logo.url) {
-      const oldPath = path.join('/auth-service/uploads/profiles', path.basename(user.logo.url));
+      const oldPath = path.join('auth-service/uploads/profiles', path.basename(user.logo.url));
       console.log('Tentative de suppression de l\'ancienne image:', oldPath);
       try {
         if (fs.existsSync(oldPath)) {
@@ -158,8 +158,8 @@ router.post('/upload-profile-picture', auth, upload.single('image'), async (req,
       }
     }
 
-    // Mettre à jour l'URL de l'image dans la base de données avec un chemin absolu
-    const imageUrl = `/api/auth/uploads/profiles/${req.file.filename}`;
+    // Mettre à jour l'URL de l'image dans la base de données avec le bon chemin complet
+    const imageUrl = `http://localhost:5000/api/auth/uploads/profiles/${req.file.filename}`;
     console.log('Nouvelle URL de l\'image:', imageUrl);
     user.logo = {
       url: imageUrl,
@@ -311,6 +311,22 @@ router.post('/refresh-token', async (req, res) => {
             code: 'REFRESH_TOKEN_ERROR'
         });
     }
+});
+
+// Route de déconnexion
+router.post('/logout', (req, res) => {
+    // Supprimer les cookies
+    res.clearCookie('cesi_vents_access_token', {
+        domain: process.env.COOKIE_DOMAIN || 'localhost',
+        path: '/'
+    });
+    
+    res.clearCookie('cesi_vents_refresh_token', {
+        domain: process.env.COOKIE_DOMAIN || 'localhost',
+        path: '/'
+    });
+
+    res.json({ message: 'Déconnexion réussie' });
 });
 
 module.exports = router;

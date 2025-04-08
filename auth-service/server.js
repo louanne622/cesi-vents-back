@@ -16,7 +16,7 @@ const app = express();
 
 // Middleware
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3002',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-refresh-token']
@@ -55,7 +55,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
 });
 
-const PORT = process.env.AUTH_SERVICE_PORT || 3001;
+const PORT = process.env.AUTH_SERVICE_PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Auth service running on port ${PORT}`);
 });

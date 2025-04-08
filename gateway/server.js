@@ -10,7 +10,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3002',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-refresh-token']
@@ -20,14 +20,14 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 const SERVICES = {
-    auth: "http://auth-service:3001",
-    events: "http://event-service:3002",
-    tickets: "http://ticket-service:3003",
-    gamification: "http://gamification-service:3004",
-    clubs: "http://club-service:3005",
-    bde_membership: "http://bde_membership-service:3006",
-    promotion: "http://promotion-service:3007",
-    transaction: "http://transaction-service:3008"
+    auth: "http://auth-service:5001",
+    events: "http://event-service:5002",
+    tickets: "http://ticket-service:5003",
+    gamification: "http://gamification-service:5004",
+    clubs: "http://club-service:5005",
+    bde_membership: "http://bde_membership-service:5006",
+    promotion: "http://promotion-service:5007",
+    transaction: "http://transaction-service:5008"
 };
 
 const storage = multer.diskStorage({
@@ -51,6 +51,9 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.originalUrl}`);
     next();
 });
+
+// Route pour servir les fichiers statiques
+app.use('/api/auth/uploads', express.static(path.join(__dirname, 'uploads/profiles')));
 
 // Route principale pour rediriger vers les services
 app.use('/api/:service/*', async (req, res) => {
@@ -157,9 +160,9 @@ app.use('/api/:service/*', async (req, res) => {
     }
 });
 
-// Route pour servir les fichiers statiques
-app.use('/api/auth/uploads', async (req, res) => {
-    const targetUrl = SERVICES.auth + '/api/auth/uploads' + req.path;
+// Route pour servir les fichiers statiques depuis le service auth
+app.get('/api/auth/uploads/profiles/*', async (req, res) => {
+    const targetUrl = SERVICES.auth + '/api/auth/uploads/profiles' + req.path;
     console.log('Forwarding static file request to:', targetUrl);
     
     try {
@@ -222,7 +225,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Gateway running on port ${PORT}`);
 });

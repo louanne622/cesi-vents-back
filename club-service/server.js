@@ -32,7 +32,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
 });
 
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 5005;
 app.listen(PORT, async () => {
     console.log(`Club Service is running on port ${PORT}`);
 });
