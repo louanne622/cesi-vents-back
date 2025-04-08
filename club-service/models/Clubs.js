@@ -27,7 +27,15 @@ const ClubSchema = new mongoose.Schema({
     admins: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    category: {
+        type: String,
+        required: true
+    },
+    campus: {
+        type: String,
+        required: true
+    }
 }, {
     timestamps: true
 });
