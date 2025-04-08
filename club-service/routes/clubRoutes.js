@@ -44,7 +44,7 @@ router.get('/:id', clubExists, async (req, res) => {
 });
 
 // Mettre à jour un club (admin du club seulement)
-router.put('/:id', isClubAdmin, validateClub, async (req, res) => {
+router.put('/:id', isClubAdmin, async (req, res) => {
     try {
         const { name, description, logo, email, category, campus } = req.body;
         
