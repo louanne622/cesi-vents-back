@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT_SERVICE_BDE_MEMBERSHIP || 3006;
+const PORT = process.env.PORT_SERVICE_BDE_MEMBERSHIP || 5006;
 app.listen(PORT, async () => {
     console.log(`BDE Membership Service is running on port ${PORT}`);
 });
