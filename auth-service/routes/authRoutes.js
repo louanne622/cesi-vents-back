@@ -352,14 +352,23 @@ router.get('/getUserById/:id', async (req, res) => {
 // Mettre à jour un utilisateur
 router.put('/updateUser/:id', async (req, res) => {
     try {
-        const { first_name, last_name, phone, campus } = req.body;
-        const user = req.user;
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
 
         // Mise à jour des champs autorisés
-        if (first_name) user.first_name = first_name;
-        if (last_name) user.last_name = last_name;
-        if (phone) user.phone = phone;
-        if (campus) user.campus = campus;
+        if (req.body.first_name) user.first_name = req.body.first_name;
+        if (req.body.last_name) user.last_name = req.body.last_name;
+        if (req.body.phone) user.phone = req.body.phone;
+        if (req.body.campus) user.campus = req.body.campus;
+        if (req.body.role) user.role = req.body.role;
+        if (typeof req.body.bde_member !== 'undefined') user.bde_member = req.body.bde_member;
+        if (req.body.points) user.points = req.body.points;
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password_hash = await bcrypt.hash(req.body.password, salt);
+          }
 
         await user.save();
         res.json(user);
@@ -372,7 +381,11 @@ router.put('/updateUser/:id', async (req, res) => {
 // Supprimer un utilisateur (admin seulement)
 router.delete('/deleteUser/:id', async (req, res) => {
     try {
-        await req.user.remove();
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+
         res.json({ message: 'Utilisateur supprimé avec succès' });
     } catch (err) {
         console.error(err.message);
@@ -380,17 +393,45 @@ router.delete('/deleteUser/:id', async (req, res) => {
     }
 });
 
-//route pour ajouter un utilisateur
+// Route pour ajouter un utilisateur (admin seulement)
 router.post('/addUser', async (req, res) => {
     try {
         const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
-        const user = new User({ first_name, last_name, email, password, phone, campus, role, bde_member });
+
+        // Validation des champs requis
+        if (!email || !password || !first_name || !last_name) {
+            return res.status(400).json({ message: 'Tous les champs obligatoires doivent être remplis' });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'Cet utilisateur existe déjà' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user = new User({
+            first_name,
+            last_name,
+            email,
+            password_hash: hashedPassword,
+            phone,
+            campus,
+            role,
+            bde_member
+          });
         await user.save();
-        res.json(user);
+
+        // Ne pas renvoyer le mot de passe hashé
+        const userResponse = user.toObject();
+        delete userResponse.password_hash;
+        
+        res.json(userResponse);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Erreur serveur');
+        res.status(500).json({ message: 'Erreur serveur' });
     }
-}); 
+});
 
 module.exports = router;
