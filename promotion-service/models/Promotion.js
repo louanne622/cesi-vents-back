@@ -18,11 +18,11 @@ const promotionSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    id_club: {
+    id_club: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',
-        required: true
-    },
+        required: false
+    }],
     value: {
         type: Number,
         required: true,

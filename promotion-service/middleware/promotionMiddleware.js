@@ -6,8 +6,8 @@ const validatePromotion = async (req, res, next) => {
     try {
         const { promotion_code, validation_date, max_use, id_club } = req.body;
 
-        if (!promotion_code || !validation_date || !max_use || !id_club) {
-            return res.status(400).json({ message: 'Tous les champs sont requis' });
+        if (!promotion_code || !validation_date || !max_use) {
+            return res.status(400).json({ message: 'Les champs promotion_code, validation_date et max_use sont requis' });
         }
 
         if (max_use <= 0) {
@@ -20,11 +20,15 @@ const validatePromotion = async (req, res, next) => {
             return res.status(400).json({ message: 'Ce code promotion existe déjà' });
         }
 
-        // Vérifier si le club existe
-        try {
-            await axios.get(`${process.env.CLUB_SERVICE_URL}/${id_club}`);
-        } catch (err) {
-            return res.status(400).json({ message: 'Club non trouvé' });
+        // Vérifier si les clubs existent seulement si id_club est fourni
+        if (id_club && id_club.length > 0) {
+            try {
+                for (const clubId of id_club) {
+                    await axios.get(`${process.env.CLUB_SERVICE_URL}/${clubId}`);
+                }
+            } catch (err) {
+                return res.status(400).json({ message: 'Un ou plusieurs clubs n\'ont pas été trouvés' });
+            }
         }
 
         next();
