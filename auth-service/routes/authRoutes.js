@@ -450,4 +450,25 @@ router.post('/addUser', auth, async (req, res) => {
     }
 });
 
+// Assigner un club à un utilisateur
+router.put('/assignClub/:id', async (req, res) => {
+    try {
+        const { clubId } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+
+        user.role = 'clubLeader';
+        user.clubId = clubId;
+        console.log(user);
+        await user.save();
+
+        res.json({ message: 'Club assigné avec succès' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+}); 
+
 module.exports = router;

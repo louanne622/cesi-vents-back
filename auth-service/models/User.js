@@ -12,7 +12,14 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin']
+        enum: ['user', 'admin', 'clubLeader']
+    },
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+        required: function() {
+            return this.role === 'clubLeader';
+        }
     },
     bde_member: {
         type: Boolean,
