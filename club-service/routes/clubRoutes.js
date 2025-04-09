@@ -107,12 +107,31 @@ router.delete('/:id/admins/:userId', isClubAdmin, async (req, res) => {
 // Supprimer un club (admin seulement)
 router.delete('/:id', isAdmin, clubExists, async (req, res) => {
     try {
-        await req.club.remove();
+        const result = await Club.deleteOne({ _id: req.params.id });
+        
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Club non trouvé' });
+        }
+        
         res.json({ message: 'Club supprimé avec succès' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Erreur serveur');
+        console.error('Erreur lors de la suppression du club:', err);
+        res.status(500).json({ message: 'Erreur serveur lors de la suppression du club' });
     }
 });
+
+// Obtenir un club par nom
+router.get('/name/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      const club = await Club.findOne({ name });
+      if (!club) {
+        return res.status(404).json({ message: 'Club non trouvé' });
+      }
+      return res.json(club);
+    } catch (error) {
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+  });
 
 module.exports = router;

@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 
 const promotionSchema = new mongoose.Schema({
-    id_transaction: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Transaction'
-    },
     promotion_code: {
         type: String,
         required: true,
