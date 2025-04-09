@@ -128,6 +128,7 @@ router.get('/:id/participants/export', async (req, res) => {
     }
 });
 
+
 // Envoyer un message groupé aux participants
 router.post('/:id/send-message', async (req, res) => {
     try {
