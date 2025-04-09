@@ -329,4 +329,125 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Déconnexion réussie' });
 });
 
+router.get('/getAllUsers', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const users = await User.find().select('-password_hash');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+router.get('/getUserById/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password_hash');
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Mettre à jour un utilisateur
+router.put('/updateUser/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        // Mise à jour des champs autorisés
+        if (req.body.first_name) user.first_name = req.body.first_name;
+        if (req.body.last_name) user.last_name = req.body.last_name;
+        if (req.body.phone) user.phone = req.body.phone;
+        if (req.body.campus) user.campus = req.body.campus;
+        if (req.body.role) user.role = req.body.role;
+        if (typeof req.body.bde_member !== 'undefined') user.bde_member = req.body.bde_member;
+        if (req.body.points) user.points = req.body.points;
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password_hash = await bcrypt.hash(req.body.password, salt);
+          }
+
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Supprimer un utilisateur (admin seulement)
+router.delete('/deleteUser/:id', auth, async (req, res) => {
+    const { id } = req.params;
+
+    if (req.user.id == id) {
+        return res.status(400).json({ message: "Tu ne peux pas te supprimer toi-même !" });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    res.json({ message: 'Utilisateur supprimé avec succès' });
+}); 
+
+// Route pour ajouter un utilisateur (admin seulement)
+router.post('/addUser', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
+
+        // Validation des champs requis
+        if (!email || !password || !first_name || !last_name) {
+            return res.status(400).json({ message: 'Tous les champs obligatoires doivent être remplis' });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'Cet utilisateur existe déjà' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user = new User({
+            first_name,
+            last_name,
+            email,
+            password_hash: hashedPassword,
+            phone,
+            campus,
+            role,
+            bde_member
+          });
+        await user.save();
+
+        // Ne pas renvoyer le mot de passe hashé
+        const userResponse = user.toObject();
+        delete userResponse.password_hash;
+        
+        res.json(userResponse);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
 module.exports = router;
