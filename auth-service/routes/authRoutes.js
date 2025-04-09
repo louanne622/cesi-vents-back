@@ -329,8 +329,12 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Déconnexion réussie' });
 });
 
-router.get('/getAllUsers',  async (req, res) => {
+router.get('/getAllUsers', auth, async (req, res) => {
     try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
         const users = await User.find().select('-password_hash');
         res.json(users);
     } catch (err) {
@@ -339,9 +343,15 @@ router.get('/getAllUsers',  async (req, res) => {
     }
 });
 
-router.get('/getUserById/:id', async (req, res) => {
+router.get('/getUserById/:id', auth, async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('-password_hash');
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
         res.json(user);
     } catch (err) {
         console.error(err.message);
@@ -350,11 +360,14 @@ router.get('/getUserById/:id', async (req, res) => {
 });
 
 // Mettre à jour un utilisateur
-router.put('/updateUser/:id', async (req, res) => {
+router.put('/updateUser/:id', auth, async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
         }
 
         // Mise à jour des champs autorisés
@@ -379,23 +392,26 @@ router.put('/updateUser/:id', async (req, res) => {
 });
 
 // Supprimer un utilisateur (admin seulement)
-router.delete('/deleteUser/:id', async (req, res) => {
-    try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: 'Utilisateur non trouvé' });
-        }
+router.delete('/deleteUser/:id', auth, async (req, res) => {
+    const { id } = req.params;
 
-        res.json({ message: 'Utilisateur supprimé avec succès' });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Erreur serveur');
+    if (req.user.id == id) {
+        return res.status(400).json({ message: "Tu ne peux pas te supprimer toi-même !" });
     }
-});
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    res.json({ message: 'Utilisateur supprimé avec succès' });
+}); 
 
 // Route pour ajouter un utilisateur (admin seulement)
-router.post('/addUser', async (req, res) => {
+router.post('/addUser', auth, async (req, res) => {
     try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
         const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
 
         // Validation des champs requis
