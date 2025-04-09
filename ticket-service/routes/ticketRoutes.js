@@ -8,7 +8,7 @@ const { validateEventAvailability, validateTicketAccess, validateQRCode } = requ
 // Create a new ticket
 router.post('/new', validateEventAvailability, async (req, res) => {
     try {
-        const { event_id, user_id } = req.body;
+        const { event_id, user_id, date, status } = req.body;
 
         // Generate unique QR code
         const qrData = `${event_id}-${user_id}-${Date.now()}`;
@@ -17,6 +17,8 @@ router.post('/new', validateEventAvailability, async (req, res) => {
         const ticket = new Ticket({
             event_id,
             user_id,
+            purchase_date: date,
+            status,
             qr_code: qrCode
         });
 
