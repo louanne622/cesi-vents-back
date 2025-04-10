@@ -1,4 +1,5 @@
 const axios = require('axios');
+const Event = require('../models/Event');
 
 // Middleware pour vérifier si l'utilisateur est admin
 const isAdmin = async (req, res, next) => {
