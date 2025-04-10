@@ -77,7 +77,8 @@ const eventSchema = new mongoose.Schema({
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true
+        required: true,
+        immutable: true // Empêche la modification après la création
     },
     participants: [participantSchema]
 }, {

@@ -66,6 +66,18 @@ router.put('/:id', isAdmin, eventExists, async (req, res) => {
             });
         }
 
+        // Vérifier que la date limite d'inscription est valide si elle est fournie
+        if (req.body.registrationDeadline && req.body.date) {
+            const registrationDate = new Date(req.body.registrationDeadline);
+            const eventDate = new Date(req.body.date);
+            if (registrationDate > eventDate) {
+                return res.status(400).json({
+                    message: 'La date limite d\'inscription doit être avant la date de l\'événement'
+                });
+            }
+        }
+
+        // Mettre à jour l'événement (createdBy sera ignoré car immutable)
         Object.assign(req.event, req.body);
         const updatedEvent = await req.event.save();
         res.json(updatedEvent);
@@ -77,8 +89,8 @@ router.put('/:id', isAdmin, eventExists, async (req, res) => {
 // Annuler un événement (admin seulement)
 router.delete('/:id', isAdmin, eventExists, async (req, res) => {
     try {
-        await req.event.cancel();
-        res.json({ message: 'Événement annulé avec succès', event: req.event });
+        await Event.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Événement supprimé avec succès' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
