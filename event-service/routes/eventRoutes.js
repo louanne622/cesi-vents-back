@@ -97,6 +97,30 @@ router.delete('/:id', isAdmin, eventExists, async (req, res) => {
     }
 });
 
+//increase available tickets for an event
+router.put('/:id/tickets/increase', eventExists, async (req, res) => {
+    try {
+        const event = req.event;
+        event.availableTickets += 1;
+        await event.save();
+        res.json({ message: 'Ticket added successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//decrease available tickets for an event
+router.put('/:id/tickets/decrease', eventExists, async (req, res) => {
+    try {
+        const event = req.event;
+        event.availableTickets -= 1;
+        await event.save();
+        res.json({ message: 'Ticket removed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Voir la liste des inscrits (admin seulement)
 router.get('/:id/participants', isAdmin, eventExists, async (req, res) => {
     try {
