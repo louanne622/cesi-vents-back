@@ -13,8 +13,8 @@ router.post('/create', isAdmin, async (req, res) => {
         }
         const eventData = {
             ...req.body,
-            createdBy: req.user._id.toString(), // Conversion explicite en string si c'est un ObjectId
-            availableTickets: 0
+            createdBy: req.user._id.toString(),
+            availableTickets: 0,
         };        
         const event = new Event(eventData);
         const savedEvent = await event.save();
@@ -161,89 +161,6 @@ router.post('/:id/send-message', async (req, res) => {
             message: 'Message envoyé avec succès',
             recipients: recipients
         });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Récupérer tous les événements d'un club
-router.get('/getAllClubEvents/:id', async (req, res) => {
-    try {
-        const events = await Event.find({ clubId: req.params.id });
-        res.json(events);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Créer un événement pour un club
-router.post('/createClubEvent/:id', async (req, res) => {
-    try {
-        const event = new Event(req.body);
-        event.clubId = req.params.id;
-        await event.save();
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}); 
-
-// Modifier un événement pour un club
-router.put('/updateClubEvent/:id', async (req, res) => {
-    try {
-        const event = await Event.findById(req.params.id);
-        event.clubId = req.params.id;
-        await event.save(); 
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}); 
-
-// Supprimer un événement pour un club
-router.delete('/deleteClubEvent/:id', async (req, res) => {
-    try {
-        await Event.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Événement supprimé avec succès' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-
-
-
-
-
-
-
-
-
-//increase tickets
-router.put('/:id/tickets/increase', async (req, res) => {
-    try {
-        const event = await Event.findById(req.params.id);
-        if (!event) {
-            return res.status(404).json({ message: 'Événement non trouvé' });
-        }
-        event.availableTickets += 1;
-        await event.save();
-        res.json({ message: 'Nombre de billets disponibles augmenté' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-//decrease tickets
-router.put('/:id/tickets/decrease', async (req, res) => {
-    try {
-        const event = await Event.findById(req.params.id);
-        if (!event) {
-            return res.status(404).json({ message: 'Événement non trouvé' });
-        }
-        event.availableTickets -= 1;
-        await event.save();
-        res.json({ message: 'Nombre de billets disponibles diminué' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
