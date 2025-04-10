@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin']
+        enum: ['user', 'admin', 'clubleader']   
     },
     bde_member: {
         type: Boolean,
@@ -38,6 +38,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         enum: ['Lille', 'Paris', 'Arras', 'Rouen']
+    },
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+        required: false
     },
     logo: {
         url: {
