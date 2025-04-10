@@ -80,6 +80,11 @@ const eventSchema = new mongoose.Schema({
         required: true,
         immutable: true // Empêche la modification après la création
     },
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+        required: true
+    },
     participants: [participantSchema]
 }, {
     timestamps: true

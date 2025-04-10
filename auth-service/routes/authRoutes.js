@@ -450,4 +450,49 @@ router.post('/addUser', auth, async (req, res) => {
     }
 });
 
+// Route pour associer un club à un utilisateur
+router.put('/assignClub/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' }); 
+        }
+        user.clubId = req.body.clubId;
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+}); 
+
+// route pour supprimer un club d'un utilisateur
+router.put('/deleteClub/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });     
+        }
+        user.clubId = null;
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+}); 
+
+// route pour récupérer les membres d'un club
+router.get('/getAllClubMembers/:id', async (req, res) => {
+    try {
+        const users = await User.find({ clubId: req.params.id }).select('-password_hash');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+    
+
 module.exports = router;
