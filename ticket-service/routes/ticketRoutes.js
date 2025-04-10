@@ -24,12 +24,11 @@ router.post('/new', validateEventAvailability, async (req, res) => {
 
         await ticket.save();
 
-        // Update event available tickets
+        // Increase available tickets for the event
         try {
-            await axios.put(`${process.env.EVENT_SERVICE_URL}/api/events/${event_id}/tickets/decrease`);
+            await axios.put(`${process.env.EVENT_SERVICE_URL}/${event_id}/tickets/increase`);
         } catch (error) {
-            console.error('Error updating event tickets:', error);
-            // Continue anyway as the ticket is already created
+            console.error('Error increasing event tickets:', error);
         }
 
         res.status(201).json(ticket);
@@ -65,28 +64,30 @@ router.put('/validate', validateQRCode, async (req, res) => {
         ticket.status = 'used';
         await ticket.save();
 
-        res.json(ticket);
+        res.json({ message: 'Ticket validated successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// Cancel a ticket
-router.put('/:ticketId/cancel', validateTicketAccess, async (req, res) => {
+// delete a ticket
+router.delete('/:ticketId', validateTicketAccess, async (req, res) => {
     try {
         const ticket = req.ticket; // Le middleware a déjà vérifié et fourni le ticket
-        ticket.status = 'cancelled';
-        await ticket.save();
-
-        // Increase available tickets for the event
+        
+        // Decrease available tickets for the event
         try {
-            await axios.put(`${process.env.EVENT_SERVICE_URL}/api/events/${ticket.event_id}/tickets/increase`);
+            await axios.put(`${process.env.EVENT_SERVICE_URL}/${ticket.event_id}/tickets/decrease`);
         } catch (error) {
-            console.error('Error updating event tickets:', error);
+            console.error('Error decreasing event tickets:', error);
         }
 
-        res.json(ticket);
+        // Delete the ticket
+        await ticket.deleteOne();
+        
+        res.json({ message: 'Ticket deleted successfully' });
     } catch (error) {
+        console.error('Error in delete ticket:', error);
         res.status(500).json({ message: error.message });
     }
 });
