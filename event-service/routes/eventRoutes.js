@@ -13,7 +13,8 @@ router.post('/create', isAdmin, async (req, res) => {
         }
         const eventData = {
             ...req.body,
-            createdBy: req.user._id.toString() // Conversion explicite en string si c'est un ObjectId
+            createdBy: req.user._id.toString(), // Conversion explicite en string si c'est un ObjectId
+            availableTickets: 0
         };        
         const event = new Event(eventData);
         const savedEvent = await event.save();
@@ -160,6 +161,36 @@ router.post('/:id/send-message', async (req, res) => {
             message: 'Message envoyé avec succès',
             recipients: recipients
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//increase tickets
+router.put('/:id/tickets/increase', async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ message: 'Événement non trouvé' });
+        }
+        event.availableTickets += 1;
+        await event.save();
+        res.json({ message: 'Nombre de billets disponibles augmenté' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//decrease tickets
+router.put('/:id/tickets/decrease', async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ message: 'Événement non trouvé' });
+        }
+        event.availableTickets -= 1;
+        await event.save();
+        res.json({ message: 'Nombre de billets disponibles diminué' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

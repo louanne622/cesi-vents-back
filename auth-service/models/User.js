@@ -4,7 +4,14 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        validate: {
+            validator: function(value) {
+                const validDomains = ['@viacesi.fr', '@cesi.fr'];
+                return validDomains.some(domain => value.toLowerCase().endsWith(domain));
+            },
+            message: 'L\'email doit être une adresse @viacesi.fr ou @cesi.fr'
+        }
     },
     password_hash: {
         type: String,

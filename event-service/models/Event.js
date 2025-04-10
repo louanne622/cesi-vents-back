@@ -80,7 +80,12 @@ const eventSchema = new mongoose.Schema({
         required: true,
         immutable: true // Empêche la modification après la création
     },
-    participants: [participantSchema]
+    participants: [participantSchema],
+    availableTickets: {
+        type: Number,
+        required: true,
+        min: [0, 'Le nombre de billets disponibles ne peut pas être négatif']
+    }
 }, {
     timestamps: true
 });
