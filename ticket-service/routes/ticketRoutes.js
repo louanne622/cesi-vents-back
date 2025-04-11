@@ -50,7 +50,7 @@ router.post('/new', validateEventAvailability, async (req, res) => {
         // Add 5 points to the user
         try {
             const token = req.header('x-auth-token');
-            await axios.post(
+            await axios.put(
                 `${process.env.AUTH_SERVICE_URL}/${user_id}/addPoints`, 
                 { points: 5 },
                 { headers: { 'x-auth-token': token } }

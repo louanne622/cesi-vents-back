@@ -284,17 +284,32 @@ router.get('/:id/gamification', auth, async (req, res) => {
 //route pour ajouter des points à l'utilisateur
 router.post('/:id/addPoints', auth, async (req, res) => {
     try {
+        console.log('Requête reçue pour ajouter des points:', {
+            userId: req.params.id,
+            points: req.body.points
+        });
+
         const { points } = req.body;
         const user = await User.findById(req.params.id);
+
         if (!user) {
+            console.log('Utilisateur non trouvé:', req.params.id);
             return res.status(404).json({ message: 'Utilisateur non trouvé' });
         }
+
+        console.log('Points avant ajout:', user.points);
+        // Ajouter les points
         user.points += points;
         await user.save();
-        res.json({ message: 'Points ajoutés avec succès' });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ message: 'Erreur serveur' });
+        console.log('Points après ajout:', user.points);
+
+        res.json({ 
+            message: 'Points ajoutés avec succès',
+            points: user.points
+        });
+    } catch (error) {
+        console.error('Erreur lors de l\'ajout des points:', error);
+        res.status(500).json({ message: 'Erreur lors de l\'ajout des points' });
     }
 });
 
