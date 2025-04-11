@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const auth = require('../middleware/auth');
+const { auth, isAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
@@ -248,6 +248,39 @@ router.put('/settings', auth, async (req, res) => {
     }
 });
 
+// Route pour consulter les points et le statut BDE
+router.get('/:id/gamification', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+
+        // Récupérer les goodies disponibles
+        const goodies = await require('../models/Goodie').find({ available: true, stock: { $gt: 0 } });
+
+        res.json({
+            points: user.points,
+            bde_member: user.bde_member,
+            reductions: user.bde_member ? [
+                { type: 'event', percentage: 20, description: 'Réduction de 20% sur les événements' },
+            ] : [],
+            available_goodies: goodies.map(g => ({
+                id: g._id,
+                name: g.name,
+                description: g.description,
+                points_cost: g.points_cost,
+                image_url: g.image_url,
+                stock: g.stock,
+                can_afford: user.points >= g.points_cost
+            }))
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
 //route pour ajouter des points à l'utilisateur
 router.post('/:id/addPoints', auth, async (req, res) => {
     try {
@@ -392,7 +425,7 @@ router.put('/updateUser/:id', auth, async (req, res) => {
 });
 
 // Supprimer un utilisateur (admin seulement)
-router.delete('/deleteUser/:id', auth, async (req, res) => {
+router.delete('/deleteUser/:id', auth, isAdmin, async (req, res) => {
     const { id } = req.params;
 
     if (req.user.id == id) {
@@ -406,11 +439,8 @@ router.delete('/deleteUser/:id', auth, async (req, res) => {
 }); 
 
 // Route pour ajouter un utilisateur (admin seulement)
-router.post('/addUser', auth, async (req, res) => {
+router.post('/addUser', auth, isAdmin, async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Accès non autorisé' });
-        }
 
         const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
 
