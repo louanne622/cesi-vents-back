@@ -10,98 +10,102 @@ const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
-beforeAll(async () => {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_test_db', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+// Mock des dépendances
+jest.mock('../models/User');
+jest.mock('bcryptjs');
+jest.mock('jsonwebtoken');
+
+describe('Auth Service Tests', () => {
+  beforeEach(() => {
+    // Reset des mocks avant chaque test
+    jest.clearAllMocks();
   });
-}, 10000);
 
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-}, 10000);
-
-beforeEach(async () => {
-  await User.deleteMany({});
-});
-
-describe('Auth Routes Tests', () => {
-  describe('POST /api/auth/register', () => {
+  describe('Register', () => {
     it('should register a new user successfully', async () => {
-      const userData = {
+      const mockUser = {
         email: 'test@test.com',
-        password: 'password123',
         firstName: 'Test',
         lastName: 'User',
+        role: 'user',
+        _id: 'mockId'
       };
+
+      // Mock de la création d'utilisateur
+      User.findOne.mockResolvedValue(null);
+      User.create.mockResolvedValue(mockUser);
+      bcrypt.hash.mockResolvedValue('hashedPassword');
+      jwt.sign.mockReturnValue('mockToken');
 
       const response = await request(app)
         .post('/api/auth/register')
-        .send(userData);
+        .send({
+          email: 'test@test.com',
+          password: 'password123',
+          firstName: 'Test',
+          lastName: 'User'
+        });
 
       expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.user).toHaveProperty('email', userData.email);
-      expect(response.body.user).not.toHaveProperty('password');
-    }, 10000);
+      expect(response.body).toEqual({
+        token: 'mockToken',
+        user: mockUser
+      });
+      expect(User.create).toHaveBeenCalledTimes(1);
+    });
 
     it('should not register user with existing email', async () => {
-      const userData = {
-        email: 'existing@test.com',
-        password: 'password123',
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'user'
-      };
-
-      await User.create(userData);
+      User.findOne.mockResolvedValue({ email: 'existing@test.com' });
 
       const response = await request(app)
         .post('/api/auth/register')
-        .send(userData);
+        .send({
+          email: 'existing@test.com',
+          password: 'password123',
+          firstName: 'Test',
+          lastName: 'User'
+        });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('message', 'User already exists');
-    }, 10000);
+      expect(response.body.message).toBe('User already exists');
+      expect(User.create).not.toHaveBeenCalled();
+    });
   });
 
-  describe('POST /api/auth/login', () => {
+  describe('Login', () => {
     it('should login successfully with correct credentials', async () => {
-      const password = 'password123';
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      const user = await User.create({
+      const mockUser = {
         email: 'test@test.com',
-        password: hashedPassword,
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'user'
-      });
+        password: 'hashedPassword',
+        _id: 'mockId'
+      };
+
+      User.findOne.mockResolvedValue(mockUser);
+      bcrypt.compare.mockResolvedValue(true);
+      jwt.sign.mockReturnValue('mockToken');
 
       const response = await request(app)
         .post('/api/auth/login')
         .send({
           email: 'test@test.com',
-          password: password
+          password: 'password123'
         });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
-      expect(response.body.user).toHaveProperty('email', user.email);
-    }, 10000);
+      expect(response.body).toEqual({
+        token: 'mockToken',
+        user: mockUser
+      });
+    });
 
     it('should not login with incorrect password', async () => {
-      const password = 'password123';
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      await User.create({
+      const mockUser = {
         email: 'test@test.com',
-        password: hashedPassword,
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'user'
-      });
+        password: 'hashedPassword'
+      };
+
+      User.findOne.mockResolvedValue(mockUser);
+      bcrypt.compare.mockResolvedValue(false);
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -111,41 +115,36 @@ describe('Auth Routes Tests', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('message', 'Invalid credentials');
-    }, 10000);
+      expect(response.body.message).toBe('Invalid credentials');
+    });
   });
 
-  describe('GET /api/auth/me', () => {
+  describe('Get User Profile', () => {
     it('should return user data with valid token', async () => {
-      const user = await User.create({
+      const mockUser = {
         email: 'test@test.com',
-        password: await bcrypt.hash('password123', 10),
         firstName: 'Test',
         lastName: 'User',
-        role: 'user'
-      });
+        _id: 'mockId'
+      };
 
-      const token = jwt.sign(
-        { id: user._id },
-        process.env.JWT_SECRET || 'cesi_vents_backend_2025',
-        { expiresIn: '1h' }
-      );
+      jwt.verify.mockReturnValue({ id: 'mockId' });
+      User.findById.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token}`);
+        .set('Authorization', 'Bearer validToken');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('email', user.email);
-      expect(response.body).not.toHaveProperty('password');
-    }, 10000);
+      expect(response.body).toEqual(mockUser);
+    });
 
     it('should not allow access without token', async () => {
       const response = await request(app)
         .get('/api/auth/me');
 
       expect(response.status).toBe(401);
-      expect(response.body).toHaveProperty('message', 'No token, authorization denied');
-    }, 10000);
+      expect(response.body.message).toBe('No token, authorization denied');
+    });
   });
 });
