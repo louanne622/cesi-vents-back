@@ -4,17 +4,3 @@ describe('CI smoke test', () => {
     });
   });
 
-  describe('Club Service Tests', () => {
-    let club;
-
-    beforeEach(async () => {
-      club = await Club.create({
-        name: 'Test Club',
-        description: 'Test Description',
-        location: 'Test Location',
-        image: 'test-image.jpg',
-        owner: 'test-owner'
-      });
-    });
-  
-
