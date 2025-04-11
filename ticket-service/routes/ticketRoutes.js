@@ -8,7 +8,21 @@ const { validateEventAvailability, validateTicketAccess, validateQRCode } = requ
 // Create a new ticket
 router.post('/new', validateEventAvailability, async (req, res) => {
     try {
-        const { event_id, user_id, date, status } = req.body;
+        const { event_id, user_id, date, status, price } = req.body;
+
+        // Vérifier si l'utilisateur est membre BDE pour appliquer la réduction
+        let finalPrice = price;
+        try {
+            const userResponse = await axios.get(`${process.env.AUTH_SERVICE_URL}/${user_id}/gamification`);
+            if (userResponse.data.bde_member) {
+                const reduction = userResponse.data.reductions.find(r => r.type === 'event');
+                if (reduction) {
+                    finalPrice = price * (1 - reduction.percentage / 100);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking user BDE status:', error);
+        }
 
         // Generate unique QR code
         const qrData = `${event_id}-${user_id}-${Date.now()}`;
@@ -19,7 +33,9 @@ router.post('/new', validateEventAvailability, async (req, res) => {
             user_id,
             purchase_date: date,
             status,
-            qr_code: qrCode
+            qr_code: qrCode,
+            price: finalPrice,
+            original_price: price
         });
 
         await ticket.save();
@@ -29,6 +45,18 @@ router.post('/new', validateEventAvailability, async (req, res) => {
             await axios.put(`${process.env.EVENT_SERVICE_URL}/${event_id}/tickets/increase`);
         } catch (error) {
             console.error('Error increasing event tickets:', error);
+        }
+
+        // Add 5 points to the user
+        try {
+            const token = req.header('x-auth-token');
+            await axios.post(
+                `${process.env.AUTH_SERVICE_URL}/${user_id}/addPoints`, 
+                { points: 5 },
+                { headers: { 'x-auth-token': token } }
+            );
+        } catch (error) {
+            console.error('Error updating user points:', error);
         }
 
         res.status(201).json(ticket);

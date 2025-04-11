@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const verifyToken = (token, secret) => {
     try {
@@ -16,7 +17,7 @@ const generateAccessToken = (user) => {
     );
 };
 
-module.exports = function(req, res, next) {
+const auth = async function(req, res, next) {
     try {
         // Récupérer l'access token du header
         const accessToken = req.header('x-auth-token');
@@ -68,3 +69,20 @@ module.exports = function(req, res, next) {
     }
 };
 
+// Middleware pour vérifier si l'utilisateur est admin
+const isAdmin = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès refusé : droits administrateur requis' });
+        }
+        next();
+    } catch (err) {
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+};
+
+module.exports = {
+    auth,
+    isAdmin
+};

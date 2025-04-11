@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
-const auth = require('./middleware/auth');
+const { auth, isAdmin } = require('./middleware/auth');
 const path = require('path');
 
 // Vérifier que les variables d'environnement sont définies
@@ -31,6 +31,7 @@ connectDB();
 
 // Routes publiques - Enlever le préfixe /api car il est géré par la gateway
 app.use("/", require("./routes/authRoutes"));
+app.use("/goodies", require("./routes/goodieRoutes"));
 
 // Servir les fichiers statiques après les routes
 app.use('/api/auth/uploads', express.static('/auth-service/uploads', {
