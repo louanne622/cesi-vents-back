@@ -24,3 +24,6 @@ const PORT = process.env.PORT || 5008;
 app.listen(PORT, () => {
     console.log(`Transaction service running on port ${PORT}`);
 });
+
+
+module.exports = app;

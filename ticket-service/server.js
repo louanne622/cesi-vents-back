@@ -21,3 +21,5 @@ const PORT = process.env.PORT_SERVICE_TICKET || 5003;
 app.listen(PORT, () => {
     console.log(`Ticket service is running on port ${PORT}`);
 });
+
+module.exports = app;

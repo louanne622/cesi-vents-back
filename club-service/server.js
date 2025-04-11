@@ -36,3 +36,5 @@ const PORT = process.env.PORT || 5005;
 app.listen(PORT, async () => {
     console.log(`Club Service is running on port ${PORT}`);
 });
+
+module.exports = app;
