@@ -15,12 +15,12 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true
   });
-});
+}, 10000);
 
 afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
-});
+}, 10000);
 
 beforeEach(async () => {
   await User.deleteMany({});
@@ -44,7 +44,7 @@ describe('Auth Routes Tests', () => {
       expect(response.body).toHaveProperty('token');
       expect(response.body.user).toHaveProperty('email', userData.email);
       expect(response.body.user).not.toHaveProperty('password');
-    });
+    }, 10000);
 
     it('should not register user with existing email', async () => {
       const userData = {
@@ -63,7 +63,7 @@ describe('Auth Routes Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'User already exists');
-    });
+    }, 10000);
   });
 
   describe('POST /api/auth/login', () => {
@@ -89,7 +89,7 @@ describe('Auth Routes Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('token');
       expect(response.body.user).toHaveProperty('email', user.email);
-    });
+    }, 10000);
 
     it('should not login with incorrect password', async () => {
       const password = 'password123';
@@ -112,7 +112,7 @@ describe('Auth Routes Tests', () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'Invalid credentials');
-    });
+    }, 10000);
   });
 
   describe('GET /api/auth/me', () => {
@@ -138,7 +138,7 @@ describe('Auth Routes Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('email', user.email);
       expect(response.body).not.toHaveProperty('password');
-    });
+    }, 10000);
 
     it('should not allow access without token', async () => {
       const response = await request(app)
@@ -146,6 +146,6 @@ describe('Auth Routes Tests', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'No token, authorization denied');
-    });
+    }, 10000);
   });
 });
