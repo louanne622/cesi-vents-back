@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 
 const promotionSchema = new mongoose.Schema({
-    id_transaction: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Transaction'
-    },
     promotion_code: {
         type: String,
         required: true,
@@ -26,6 +22,12 @@ const promotionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Club',
         required: true
+    },
+    value: {
+        type: Number,
+        required: true,
+        min: [0, 'Percentage value cannot be negative'],
+        max: [100, 'Percentage value cannot exceed 100']
     }
 }, {
     timestamps: true

@@ -1,6 +1,23 @@
 const Transaction = require('../models/Transaction');
 const axios = require('axios');
 
+// Middleware pour vérifier si l'utilisateur est authentifié
+const isAuth = async (req, res, next) => {
+    try {
+        const response = await axios.get(`${process.env.AUTH_SERVICE_URL}/profil`, {
+            headers: {
+                'x-auth-token': req.header('x-auth-token')
+            }
+        });
+        
+        req.user = response.data;
+        next();
+    } catch (err) {
+        console.error('Erreur d\'authentification:', err);
+        res.status(401).json({ message: "Authentification requise" });
+    }
+};
+
 // Middleware pour valider les données de la transaction
 const validateTransaction = async (req, res, next) => {
     try {
@@ -116,6 +133,7 @@ const validateTransactionStatus = async (req, res, next) => {
 };
 
 module.exports = {
+    isAuth,
     validateTransaction,
     isAdmin,
     transactionExists,

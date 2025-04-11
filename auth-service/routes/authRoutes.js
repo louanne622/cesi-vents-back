@@ -88,6 +88,23 @@ router.post('/login', async (req, res) => {
 
         const { accessToken, refreshToken } = generateTokens(user);
 
+        // Configurer les cookies avec le bon domaine
+        res.cookie('cesi_vents_access_token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
+        res.cookie('cesi_vents_refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
         res.json({
             accessToken,
             refreshToken,
@@ -104,6 +121,62 @@ router.post('/login', async (req, res) => {
         console.error(err.message);
         res.status(500).send('Erreur serveur');
     }
+});
+
+// Route pour uploader une photo de profil
+router.post('/upload-profile-picture', auth, upload.single('image'), async (req, res) => {
+  try {         
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files);
+    console.log('Request file:', req.file);
+    
+    if (!req.file) {
+      console.log('Aucun fichier n\'a été reçu');
+      return res.status(400).json({ message: 'Aucune image n\'a été uploadée' });
+    }
+
+    const user = await User.findById(req.user.id).select('-password_hash');
+    console.log('Utilisateur trouvé:', user);
+
+    if (!user) {
+      console.error('Utilisateur non trouvé dans la base de données');
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Supprimer l'ancienne image si elle existe
+    if (user.logo && user.logo.url) {
+      const oldPath = path.join('auth-service/uploads/profiles', path.basename(user.logo.url));
+      console.log('Tentative de suppression de l\'ancienne image:', oldPath);
+      try {
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+          console.log('Ancienne image supprimée avec succès');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression de l\'ancienne image:', error);
+        // Continue with the upload even if old file deletion fails
+      }
+    }
+
+    // Mettre à jour l'URL de l'image dans la base de données avec le bon chemin complet
+    const imageUrl = `http://localhost:5000/api/auth/uploads/profiles/${req.file.filename}`;
+    console.log('Nouvelle URL de l\'image:', imageUrl);
+    user.logo = {
+      url: imageUrl,
+      alt: `Photo de profil de ${user.first_name}`
+    };
+    
+    await user.save();
+    console.log('Profil utilisateur mis à jour avec succès');
+
+    res.json({
+      message: 'Photo de profil mise à jour avec succès',
+      logo: user.logo
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'upload de la photo de profil:", error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour de la photo de profil" });
+  }
 });
 
 // Route pour obtenir le profil de l'utilisateur connecté
@@ -191,5 +264,235 @@ router.post('/:id/addPoints', auth, async (req, res) => {
         res.status(500).json({ message: 'Erreur serveur' });
     }
 });
+
+// Route pour rafraîchir le token
+router.post('/refresh-token', async (req, res) => {
+    try {
+        const refreshToken = req.header('x-refresh-token');
+        
+        if (!refreshToken) {
+            return res.status(401).json({ 
+                message: 'Refresh token manquant',
+                code: 'REFRESH_TOKEN_MISSING'
+            });
+        }
+
+        // Vérifier le refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        
+        if (!decoded) {
+            return res.status(401).json({ 
+                message: 'Refresh token invalide',
+                code: 'REFRESH_TOKEN_INVALID'
+            });
+        }
+
+        // Générer un nouvel access token
+        const accessToken = jwt.sign(
+            { user: decoded.user },
+            process.env.JWT_ACCESS_SECRET,
+            { expiresIn: '15m' }
+        );
+
+        // Mettre à jour le cookie du token d'accès
+        res.cookie('cesi_vents_access_token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            domain: process.env.COOKIE_DOMAIN || 'localhost',
+            path: '/'
+        });
+
+        res.json({ accessToken });
+    } catch (err) {
+        console.error('Erreur lors du rafraîchissement du token:', err.message);
+        res.status(401).json({ 
+            message: 'Session expirée, veuillez vous reconnecter',
+            code: 'REFRESH_TOKEN_ERROR'
+        });
+    }
+});
+
+// Route de déconnexion
+router.post('/logout', (req, res) => {
+    // Supprimer les cookies
+    res.clearCookie('cesi_vents_access_token', {
+        domain: process.env.COOKIE_DOMAIN || 'localhost',
+        path: '/'
+    });
+    
+    res.clearCookie('cesi_vents_refresh_token', {
+        domain: process.env.COOKIE_DOMAIN || 'localhost',
+        path: '/'
+    });
+
+    res.json({ message: 'Déconnexion réussie' });
+});
+
+router.get('/getAllUsers', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const users = await User.find().select('-password_hash');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+router.get('/getUserById/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password_hash');
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Mettre à jour un utilisateur
+router.put('/updateUser/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });
+        }
+        if (req.user.id !== user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        // Mise à jour des champs autorisés
+        if (req.body.first_name) user.first_name = req.body.first_name;
+        if (req.body.last_name) user.last_name = req.body.last_name;
+        if (req.body.phone) user.phone = req.body.phone;
+        if (req.body.campus) user.campus = req.body.campus;
+        if (req.body.role) user.role = req.body.role;
+        if (typeof req.body.bde_member !== 'undefined') user.bde_member = req.body.bde_member;
+        if (req.body.points) user.points = req.body.points;
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password_hash = await bcrypt.hash(req.body.password, salt);
+          }
+
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Supprimer un utilisateur (admin seulement)
+router.delete('/deleteUser/:id', auth, async (req, res) => {
+    const { id } = req.params;
+
+    if (req.user.id == id) {
+        return res.status(400).json({ message: "Tu ne peux pas te supprimer toi-même !" });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    res.json({ message: 'Utilisateur supprimé avec succès' });
+}); 
+
+// Route pour ajouter un utilisateur (admin seulement)
+router.post('/addUser', auth, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const { first_name, last_name, email, password, phone, campus, role, bde_member } = req.body;
+
+        // Validation des champs requis
+        if (!email || !password || !first_name || !last_name) {
+            return res.status(400).json({ message: 'Tous les champs obligatoires doivent être remplis' });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'Cet utilisateur existe déjà' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user = new User({
+            first_name,
+            last_name,
+            email,
+            password_hash: hashedPassword,
+            phone,
+            campus,
+            role,
+            bde_member
+          });
+        await user.save();
+
+        // Ne pas renvoyer le mot de passe hashé
+        const userResponse = user.toObject();
+        delete userResponse.password_hash;
+        
+        res.json(userResponse);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
+// Route pour associer un club à un utilisateur
+router.put('/assignClub/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' }); 
+        }
+        user.clubId = req.body.clubId;
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+}); 
+
+// route pour supprimer un club d'un utilisateur
+router.put('/deleteClub/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' });     
+        }
+        user.clubId = null;
+        await user.save();
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+}); 
+
+// route pour récupérer les membres d'un club
+router.get('/getAllClubMembers/:id', async (req, res) => {
+    try {
+        const users = await User.find({ clubId: req.params.id }).select('-password_hash');
+        res.json(users);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+    
 
 module.exports = router;

@@ -77,9 +77,20 @@ const eventSchema = new mongoose.Schema({
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        immutable: true // Empêche la modification après la création
+    },
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
         required: true
     },
-    participants: [participantSchema]
+    participants: [participantSchema],
+    availableTickets: {
+        type: Number,
+        required: true,
+        min: [0, 'Le nombre de billets disponibles ne peut pas être négatif']
+    }
 }, {
     timestamps: true
 });

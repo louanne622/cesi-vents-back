@@ -6,7 +6,7 @@ const { validateClub, isAdmin, clubExists, isClubAdmin } = require('../middlewar
 // Créer un club (admin seulement)
 router.post('/create', isAdmin, validateClub, async (req, res) => {
     try {
-        const { name, description, logo, email } = req.body;
+        const { name, description, logo, email, category, campus } = req.body;
         const club = new Club({
             name,
             description,
@@ -14,7 +14,9 @@ router.post('/create', isAdmin, validateClub, async (req, res) => {
                 url: logo.url,
                 alt: logo.alt
             },
-            email
+            email,
+            category,
+            campus
         });
 
         await club.save();
@@ -42,15 +44,16 @@ router.get('/:id', clubExists, async (req, res) => {
 });
 
 // Mettre à jour un club (admin du club seulement)
-router.put('/:id', isClubAdmin, validateClub, async (req, res) => {
+router.put('/:id', isClubAdmin, async (req, res) => {
     try {
-        const { name, description, logo, email } = req.body;
+        const { name, description, logo, email, category, campus } = req.body;
         
         req.club.name = name;
         req.club.description = description;
         req.club.logo = logo;
         req.club.email = email;
-
+        req.club.category = category;
+        req.club.campus = campus;   
         await req.club.save();
         res.json(req.club);
     } catch (err) {
@@ -104,12 +107,31 @@ router.delete('/:id/admins/:userId', isClubAdmin, async (req, res) => {
 // Supprimer un club (admin seulement)
 router.delete('/:id', isAdmin, clubExists, async (req, res) => {
     try {
-        await req.club.remove();
+        const result = await Club.deleteOne({ _id: req.params.id });
+        
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Club non trouvé' });
+        }
+        
         res.json({ message: 'Club supprimé avec succès' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Erreur serveur');
+        console.error('Erreur lors de la suppression du club:', err);
+        res.status(500).json({ message: 'Erreur serveur lors de la suppression du club' });
     }
 });
+
+// Obtenir un club par nom
+router.get('/name/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      const club = await Club.findOne({ name });
+      if (!club) {
+        return res.status(404).json({ message: 'Club non trouvé' });
+      }
+      return res.json(club);
+    } catch (error) {
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+  });
 
 module.exports = router;

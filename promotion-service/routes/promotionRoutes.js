@@ -7,13 +7,14 @@ const axios = require('axios');
 // Créer une promotion (admin seulement)
 router.post('/create', isAdmin, validatePromotion, async (req, res) => {
     try {
-        const { promotion_code, validation_date, max_use, id_club } = req.body;
+        const { promotion_code, validation_date, max_use, id_club, value } = req.body;
         
         const promotion = new Promotion({
             promotion_code,
             validation_date,
             max_use,
-            id_club
+            id_club,
+            value
         });
 
         await promotion.save();
@@ -53,12 +54,35 @@ router.put('/deactivate/:id', isAdmin, promotionExists, async (req, res) => {
     }
 });
 
+// Activer une promotion (admin seulement)
+router.put('/activate/:id', isAdmin, promotionExists, async (req, res) => {
+    try {
+        req.promotion.activate = true;
+        await req.promotion.save();
+        res.json(req.promotion);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
+});
+
 // Vérifier la validité d'une promotion
 router.get('/verify/:promotion_code', isPromotionValid, async (req, res) => {
     res.json({ 
         message: 'Promotion valide',
         promotion: req.promotion
     });
+});
+
+// Supprimer une promotion (admin seulement)
+router.delete('/delete/:id', isAdmin, promotionExists, async (req, res) => {
+    try {
+        await Promotion.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Promotion supprimée avec succès' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erreur serveur');
+    }
 });
 
 module.exports = router;

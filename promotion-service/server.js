@@ -20,7 +20,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.PORT || 5007;
 app.listen(PORT, () => {
     console.log(`Promotion service running on port ${PORT}`);
 });

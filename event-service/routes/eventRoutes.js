@@ -1,27 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
-const auth = require('../../auth-service/middleware/auth');
 const { isAdmin, eventExists } = require('../middleware/EventMiddlewares');
 const { Parser } = require('json2csv');
 
-// Middleware pour vérifier si l'utilisateur est admin
-// const isAdmin = (req, res, next) => {
-//     if (req.user && req.user.role === 'admin') {
-//         next();
-//     } else {
-//         res.status(403).json({ message: 'Accès refusé. Rôle administrateur requis.' });
-//     }
-// };
-
 // Créer un nouvel événement (admin seulement)
-router.post('/create', auth, isAdmin, async (req, res) => {
-    try {
+router.post('/create', isAdmin, async (req, res) => {
+    try {       
+        if (!req.user || !req.user._id) {
+            console.error('Données utilisateur manquantes ou invalides');
+            return res.status(500).json({ message: "Erreur d'authentification - données utilisateur invalides" });
+        }
         const eventData = {
             ...req.body,
-            createdBy: req.user.id
-        };
-        
+            createdBy: req.user._id.toString(),
+            availableTickets: 0,
+        };        
         const event = new Event(eventData);
         const savedEvent = await event.save();
         res.status(201).json(savedEvent);
@@ -40,13 +34,23 @@ router.get('/', async (req, res) => {
     }
 });
 
+
 // Récupérer un événement par son ID
-router.get('/:id', eventExists, async (req, res) => {
-    res.json(req.event);
+router.get('/:id', async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+        if (event) {
+            res.json(event);
+        } else {
+            res.status(404).json({ message: 'Événement non trouvé' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // Modifier un événement (admin seulement)
-router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
+router.put('/:id', isAdmin, eventExists, async (req, res) => {
     try {
         if (!req.event.canBeModified() && !req.body.forceUpdate) {
             return res.status(400).json({ 
@@ -63,6 +67,18 @@ router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
             });
         }
 
+        // Vérifier que la date limite d'inscription est valide si elle est fournie
+        if (req.body.registrationDeadline && req.body.date) {
+            const registrationDate = new Date(req.body.registrationDeadline);
+            const eventDate = new Date(req.body.date);
+            if (registrationDate > eventDate) {
+                return res.status(400).json({
+                    message: 'La date limite d\'inscription doit être avant la date de l\'événement'
+                });
+            }
+        }
+
+        // Mettre à jour l'événement (createdBy sera ignoré car immutable)
         Object.assign(req.event, req.body);
         const updatedEvent = await req.event.save();
         res.json(updatedEvent);
@@ -72,17 +88,41 @@ router.put('/:id', auth, isAdmin, eventExists, async (req, res) => {
 });
 
 // Annuler un événement (admin seulement)
-router.delete('/:id', auth, isAdmin, eventExists, async (req, res) => {
+router.delete('/:id', isAdmin, eventExists, async (req, res) => {
     try {
-        await req.event.cancel();
-        res.json({ message: 'Événement annulé avec succès', event: req.event });
+        await Event.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Événement supprimé avec succès' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//increase available tickets for an event
+router.put('/:id/tickets/increase', eventExists, async (req, res) => {
+    try {
+        const event = req.event;
+        event.availableTickets += 1;
+        await event.save();
+        res.json({ message: 'Ticket added successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//decrease available tickets for an event
+router.put('/:id/tickets/decrease', eventExists, async (req, res) => {
+    try {
+        const event = req.event;
+        event.availableTickets -= 1;
+        await event.save();
+        res.json({ message: 'Ticket removed successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
 // Voir la liste des inscrits (admin seulement)
-router.get('/:id/participants', auth, isAdmin, eventExists, async (req, res) => {
+router.get('/:id/participants', isAdmin, eventExists, async (req, res) => {
     try {
         // Format de sortie (JSON par défaut ou CSV si spécifié)
         const format = req.query.format?.toLowerCase();

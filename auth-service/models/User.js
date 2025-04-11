@@ -4,7 +4,14 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        validate: {
+            validator: function(value) {
+                const validDomains = ['@viacesi.fr', '@cesi.fr'];
+                return validDomains.some(domain => value.toLowerCase().endsWith(domain));
+            },
+            message: 'L\'email doit être une adresse @viacesi.fr ou @cesi.fr'
+        }
     },
     password_hash: {
         type: String,
@@ -12,7 +19,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['user', 'admin', 'clubleader']   
     },
     bde_member: {
         type: Boolean,
@@ -38,6 +45,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         enum: ['Lille', 'Paris', 'Arras', 'Rouen']
+    },
+    clubId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Club',
+        required: false
     },
     logo: {
         url: {
